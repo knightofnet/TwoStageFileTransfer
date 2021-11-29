@@ -7,37 +7,41 @@ using TwoStageFileTransfer.utils;
 
 namespace TwoStageFileTransfer.business
 {
-    class OutToFileWork
+    class OutToFileWork : AbstractWork
     {
-        public FileInfo FirstFile { get; internal set; }
-        public string Target { get; internal set; }
+
 
         internal void DoTransfert()
         {
 
-            if (FirstFile == null)
+            if (Source == null)
             {
                 Console.WriteLine("Erreur : aucun premier fichier saisi");
                 return;
             }
-            else if ( !FirstFile.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(FirstFile.FullName))
+            else if ( !Source.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
             {
                 // ERROR
-                Console.WriteLine("Erreur : '{0}' n'existe pas", FirstFile.FullName);
+                Console.WriteLine("Erreur : '{0}' n'existe pas", Source.FullName);
                 return;
             }
 
-            while (AryxDevLibrary.utils.FileUtils.IsADirectory(FirstFile.FullName))
+            while (AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
             {
-                DirectoryInfo d = new DirectoryInfo(FirstFile.FullName);
+                DirectoryInfo d = new DirectoryInfo(Source.FullName);
                 FileInfo[] ret = d.GetFiles("*.part0", SearchOption.TopDirectoryOnly);
 
                 bool isFound = false;
                 foreach (FileInfo candidatFirstFile in ret)
                 {
+                    if (candidatFirstFile.Name.StartsWith("~"))
+                    {
+                        continue;
+                    }
+
                     if (AppCst.FirstFilePatternRegex.IsMatch(candidatFirstFile.Name))
                     {
-                        FirstFile = candidatFirstFile;
+                        Source = candidatFirstFile;
                         isFound = true;
                         break;
                     }
@@ -45,17 +49,17 @@ namespace TwoStageFileTransfer.business
 
                 if (!isFound)
                 {
-                    Console.WriteLine("Attente");
+                    Console.WriteLine("Wait for transfert files to be generated");
                     Thread.Sleep(2000);
                 }
                
             }
 
-            Match m = AppCst.FilePatternRegex.Match(FirstFile.Name);
+            Match m = AppCst.FilePatternRegex.Match(Source.Name);
             if (!m.Success)
             {
                 // ERRROR
-                Console.WriteLine("Erreur : '{0}' n'est pas un fichier valide pour commencer.", FirstFile.FullName);
+                Console.WriteLine("Erreur : '{0}' n'est pas un fichier valide pour commencer.", Source.FullName);
                 return;
             }
 
@@ -72,23 +76,27 @@ namespace TwoStageFileTransfer.business
 
             using (FileStream fo = new FileStream(targetFile.FullName, FileMode.Create))
             {
-                FileInfo currentFileToRead = FirstFile;
+                FileInfo currentFileToRead = Source;
 
                 while (totalBytesRead < totalBytesToRead)
                 {
 
-                    while (!currentFileToRead.Exists)
+                    while (!currentFileToRead.Exists || AryxDevLibrary.utils.FileUtils.IsFileLocked(currentFileToRead))
                     {
                         fo.Flush();
-                        Console.WriteLine(".");
-                        Thread.Sleep(2000);
+                        Console.Title = String.Format("TSFT - Out - {0} de {1}", "En attente", currentFileToRead.FullName);
+                        Thread.Sleep(500);
                         currentFileToRead.Refresh();
                     }
+
+                    String msg = "Lecture du fichier " + currentFileToRead.Name;
+                    Console.Title = String.Format("TSFT - Out - {0}", msg);
+                    Console.Write(msg);
 
                     using (FileStream fr = new FileStream(currentFileToRead.FullName, FileMode.Open))
                     {
 
-                        byte[] buffer = new byte[AppCst.BufferSize];
+                        byte[] buffer = new byte[BufferSize];
                         int bytesRead;
 
                         while ((bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
@@ -101,15 +109,16 @@ namespace TwoStageFileTransfer.business
 
                     }
 
+                    msg = " [OK] > Suppression ";
+                    Console.WriteLine(msg);
 
-                    currentFileToRead = new FileInfo(Path.Combine(FirstFile.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
+                    currentFileToRead.Delete();
+
+
+                    currentFileToRead = new FileInfo(Path.Combine(Source.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
 
 
                 }
-
-
-           
-
 
             }
 

@@ -8,37 +8,37 @@ using TwoStageFileTransfer.utils;
 
 namespace TwoStageFileTransfer.business
 {
-    class InToOutWork
+    class InToOutWork : AbstractWork
     {
-        public FileInfo FileInput { get; internal set; }
-        public string Target { get; set; }
+        public long MaxTransfertLength { get; internal set; }
 
-
-
-        public void DoTransfert(long maxTransfert)
+        public void DoTransfert()
         {
 
             long totalBytesRead = 0;
 
-            long chunk = 2 * 1024 * 1024;
+            long chunk = 10 * 1024 * 1024;
 
             int i = 0;
 
-            List<FileInfo> listFiles = new List<FileInfo>();
+            HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
 
-            using (FileStream fs = new FileStream(FileInput.FullName, FileMode.Open))
+            using (FileStream fs = new FileStream(Source.FullName, FileMode.Open))
             {
                 while (totalBytesRead < fs.Length)
                 {
                     long localBytesRead = 0;
-
-                    String fileOut = FileUtils.GetFileName(FileInput.Name, fs.Length, i++);
-
+                    String fileOut = FileUtils.GetFileName(Source.Name, fs.Length, i++);
                     FileInfo fileOutPath = new FileInfo(Path.Combine(Target, "~" + fileOut));
 
+                    String msg = "";
                     using (FileStream fo = new FileStream(fileOutPath.FullName, FileMode.Create))
                     {
-                        byte[] buffer = new byte[AppCst.BufferSize];
+                        msg = "Ecriture du fichier " + fileOut;
+                        Console.Title = String.Format("TSFT - In - {0}", msg);
+                        Console.Write(msg);
+
+                        byte[] buffer = new byte[BufferSize];
                         int bytesRead;
 
                         while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
@@ -48,7 +48,7 @@ namespace TwoStageFileTransfer.business
 
                             fo.Write(buffer, 0, bytesRead);
 
-                            if (localBytesRead + AppCst.BufferSize > chunk || localBytesRead + AppCst.BufferSize > maxTransfert)
+                            if (localBytesRead + BufferSize > chunk || localBytesRead + BufferSize > MaxTransfertLength)
                             {
                                 break;
                             }
@@ -59,8 +59,11 @@ namespace TwoStageFileTransfer.business
                     fileOutPath.MoveTo(Path.Combine(Target, fileOut));
                     listFiles.Add(fileOutPath);
 
+                    msg = " [OK] ";
+                    Console.WriteLine(msg);
 
-                    if (totalBytesRead + AppCst.BufferSize > maxTransfert)
+
+                    if (totalBytesRead + BufferSize > MaxTransfertLength)
                     {
                         long filesSize;
                         do
@@ -75,9 +78,9 @@ namespace TwoStageFileTransfer.business
                                 filesSize += f.Length;
                             }
 
-                            Console.WriteLine(".");
-                            Thread.Sleep(2000);
-                        } while (filesSize + AppCst.BufferSize > maxTransfert);
+                            Console.Title = String.Format("TSFT - In - {0}", "En attente de libération d'espace disque...");
+                            Thread.Sleep(500);
+                        } while (filesSize + BufferSize > MaxTransfertLength);
                     }
                 } // while for Write
             }

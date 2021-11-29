@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using TwoStageFileTransfer.business;
+using TwoStageFileTransfer.dto;
+using TwoStageFileTransfer.utils;
 
 namespace TwoStageFileTransfer
 {
@@ -8,33 +10,42 @@ namespace TwoStageFileTransfer
     {
         static void Main(string[] args)
         {
-            
+
+            AppArgsParser argsParser = new AppArgsParser();
+            AppArgs appArgs = argsParser.ParseDirect(args);
+
             // args = new string[3] {"in", @"C:\Users\ARyx\Desktop\Badger2018-08-06am.7z", @"C:\Users\ARyx\Desktop\destination"};
             // args = new string[3] {"out", @"C:\Users\ARyx\Desktop\destination\Badger2018-08-06am.7z.29445130.part0", @"C:\Users\ARyx\Desktop\destination\final"};
             // args = new string[3] { "out", @"C:\Users\ARyx\Desktop\destination", @"C:\Users\ARyx\Desktop\destination\final" };
 
-            if (args[0] == "in" && args.Length == 3)
+            Console.WriteLine("Source: {0}", appArgs.Source);
+            Console.WriteLine("Target: {0}", appArgs.Target);
+
+            Console.WriteLine();
+
+            if (appArgs.Direction == "IN")
             {
-                Console.WriteLine("Mode 1");
+                Console.WriteLine("Mode IN");
 
                 InToOutWork w = new InToOutWork();
-                w.FileInput = new FileInfo(args[1]);
-                w.Target = args[2];
+                w.Source = new FileInfo(appArgs.Source);
+                w.Target = appArgs.Target;
+                w.BufferSize = appArgs.BufferSize;
 
-                w.DoTransfert(20 * 1024 * 1024);
+                w.MaxTransfertLength = (long) (FileUtils.GetAvailableSpace(w.Target, 20 * 1024 * 1024) * 0.9);
+                Console.WriteLine("Max size used: {0}", AryxDevLibrary.utils.FileUtils.HumanReadableSize(w.MaxTransfertLength));
 
+                w.DoTransfert();
 
-
-
-
-            } else if (args[0] == "out" && args.Length == 3)
+            } else if (appArgs.Direction == "OUT")
             {
 
-                Console.WriteLine("Mode 2");
+                Console.WriteLine("Mode OUT");
 
                 OutToFileWork o = new OutToFileWork();
-                o.FirstFile = new FileInfo(args[1]);
-                o.Target = args[2];
+                o.Source = new FileInfo(appArgs.Source);
+                o.Target = appArgs.Target;
+                o.BufferSize = appArgs.BufferSize;
 
                 o.DoTransfert();
 
