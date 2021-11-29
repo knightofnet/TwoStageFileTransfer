@@ -27,7 +27,7 @@ namespace TwoStageFileTransfer.business
                 return;
             }
 
-           
+
 
             long totalBytesRead = 0;
             long totalBytesToRead = 0;
@@ -131,6 +131,12 @@ namespace TwoStageFileTransfer.business
                 }
 
 
+            }
+
+            while (AryxDevLibrary.utils.FileUtils.IsFileLocked(targetFile))
+            {
+                _log.Debug("> Quasi-done : {0} locked", targetFile.FullName);
+                Thread.Sleep(500);
             }
 
             targetFile.MoveTo(rTargetFile.FullName);
