@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security.Cryptography;
 
 namespace TwoStageFileTransfer.utils
 {
@@ -28,17 +29,31 @@ namespace TwoStageFileTransfer.utils
                     continue;
                 }
 
-                //Console.WriteLine("T:{0}, d:{1}", t.Root.FullName, drive.RootDirectory.FullName);
-
                 if (drive.RootDirectory.FullName.Equals(t.Root.FullName))
                 {
-                    //Console.WriteLine("T:{0}, d:{1}", t.Root.FullName, drive.RootDirectory.FullName);
+                    
                     return drive.AvailableFreeSpace;
-                }
-                
+                }                
             }
 
             return defaultRet;
+
+        }
+
+        public static string GetSha1Hash(FileInfo file)
+        {
+            using (FileStream stream = File.OpenRead(file.FullName))
+            {
+                using (SHA1Managed sha = new SHA1Managed())
+                {
+                    byte[] checksum = sha.ComputeHash(stream);
+                    string sendCheckSum = BitConverter.ToString(checksum)
+                        .Replace("-", string.Empty);
+
+                    return sendCheckSum;
+                }
+            }
+
 
         }
     }

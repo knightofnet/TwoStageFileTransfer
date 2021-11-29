@@ -16,16 +16,17 @@ namespace TwoStageFileTransfer.business
 
             if (Source == null)
             {
-                Console.WriteLine("Erreur : aucun premier fichier saisi");
+                Console.WriteLine("Error : no first file provided");
                 return;
             }
             else if ( !Source.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
             {
                 // ERROR
-                Console.WriteLine("Erreur : '{0}' n'existe pas", Source.FullName);
+                Console.WriteLine("Error : '{0}' doesnt exist", Source.FullName);
                 return;
             }
 
+            bool isFirstForWaitMsg = true;
             while (AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
             {
                 DirectoryInfo d = new DirectoryInfo(Source.FullName);
@@ -49,7 +50,11 @@ namespace TwoStageFileTransfer.business
 
                 if (!isFound)
                 {
-                    Console.WriteLine("Wait for transfert files to be generated");
+                    if (isFirstForWaitMsg)
+                    {
+                        Console.WriteLine("Wait for transfert files to be generated");
+                        isFirstForWaitMsg = false;
+                    }
                     Thread.Sleep(2000);
                 }
                
@@ -59,7 +64,7 @@ namespace TwoStageFileTransfer.business
             if (!m.Success)
             {
                 // ERRROR
-                Console.WriteLine("Erreur : '{0}' n'est pas un fichier valide pour commencer.", Source.FullName);
+                Console.WriteLine("Error : '{0}' is not a first valid file.", Source.FullName);
                 return;
             }
 
@@ -69,63 +74,80 @@ namespace TwoStageFileTransfer.business
             long totalBytesToRead = long.Parse(m.Groups["size"].Value);
             String finalFileName = m.Groups["name"].Value;
 
-            int i = int.Parse(m.Groups["part"].Value) + 1;
-
-
             FileInfo targetFile = new FileInfo(Path.Combine(Target, "~" + finalFileName));
-
-            using (FileStream fo = new FileStream(targetFile.FullName, FileMode.Create))
+            FileInfo rTargetFile = new FileInfo(Path.Combine(Target, finalFileName));
+            if (rTargetFile.Exists)
             {
-                FileInfo currentFileToRead = Source;
-
-                while (totalBytesRead < totalBytesToRead)
-                {
-
-                    while (!currentFileToRead.Exists || AryxDevLibrary.utils.FileUtils.IsFileLocked(currentFileToRead))
-                    {
-                        fo.Flush();
-                        Console.Title = String.Format("TSFT - Out - {0} de {1}", "En attente", currentFileToRead.FullName);
-                        Thread.Sleep(500);
-                        currentFileToRead.Refresh();
-                    }
-
-                    String msg = "Lecture du fichier " + currentFileToRead.Name;
-                    Console.Title = String.Format("TSFT - Out - {0}", msg);
-                    Console.Write(msg);
-
-                    using (FileStream fr = new FileStream(currentFileToRead.FullName, FileMode.Open))
-                    {
-
-                        byte[] buffer = new byte[BufferSize];
-                        int bytesRead;
-
-                        while ((bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            totalBytesRead += bytesRead;
-                            //localBytesRead += bytesRead;
-
-                            fo.Write(buffer, 0, bytesRead);
-                        }
-
-                    }
-
-                    msg = " [OK] > Suppression ";
-                    Console.WriteLine(msg);
-
-                    currentFileToRead.Delete();
-
-
-                    currentFileToRead = new FileInfo(Path.Combine(Source.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
-
-
-                }
-
+                _log.Warn("{0} already exists : delete");
+                rTargetFile.Delete();
             }
 
-            targetFile.MoveTo(Path.Combine(Target, finalFileName));
+
+            int i = int.Parse(m.Groups["part"].Value) + 1;
+
+            
+
+            Console.Write("Recomposing file... ");
+
+            using (ProgressBar pbar = new ProgressBar())
+            {
+                using (FileStream fo = new FileStream(targetFile.FullName, FileMode.Create))
+                {
+                    FileInfo currentFileToRead = Source;
+
+                    while (totalBytesRead < totalBytesToRead)
+                    {
+
+                        TimeSpan nowBeforeWait = DateTime.Now.TimeOfDay;
+                        while (!currentFileToRead.Exists || AryxDevLibrary.utils.FileUtils.IsFileLocked(currentFileToRead))
+                        {
+                            fo.Flush();
+                            Console.Title = String.Format("TSFT - Out - Waiting for {0}", currentFileToRead.FullName);
+                            Thread.Sleep(500);
+                            currentFileToRead.Refresh();
+
+                            if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
+                            {
+                                throw new Exception(String.Format("Waits too long time for {0}", currentFileToRead.FullName));
+                            }
+                        }
+
+                        String msg = "Reading file " + currentFileToRead.Name;
+                        Console.Title = String.Format("TSFT - Out - {0}", msg);
+                        _log.Debug(msg);
+
+                        using (FileStream fr = new FileStream(currentFileToRead.FullName, FileMode.Open))
+                        {
+
+                            byte[] buffer = new byte[BufferSize];
+                            int bytesRead;
+
+                            while ((bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                totalBytesRead += bytesRead;                                
+
+                                fo.Write(buffer, 0, bytesRead);
+                            }
+                            pbar.Report((double)totalBytesRead / totalBytesToRead);
+
+                        }
+
+                        _log.Debug("> OK");
+                        currentFileToRead.Delete();
+                        _log.Debug("> File part deleted");
 
 
-            Console.WriteLine("Terminé");
+                        currentFileToRead = new FileInfo(Path.Combine(Source.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
+
+
+                    }
+
+                }
+            }
+
+            targetFile.MoveTo(rTargetFile.FullName);
+            Console.WriteLine("Done.");
+
             return;
         }
     }
