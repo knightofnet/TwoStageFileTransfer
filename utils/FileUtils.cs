@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AryxDevLibrary.utils.logger;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -6,6 +7,7 @@ namespace TwoStageFileTransfer.utils
 {
     static class FileUtils
     {
+        private static Logger _log = Logger.LastLoggerInstance;
 
         public static String GetFileName(string origNameFile, long fileSize, int part)
         {
@@ -26,14 +28,16 @@ namespace TwoStageFileTransfer.utils
             {
                 if (!drive.IsReady)
                 {
+                    _log.Debug("{0} is not ready", drive.Name);
                     continue;
                 }
 
-                if (drive.RootDirectory.FullName.Equals(t.Root.FullName))
+                if (drive.RootDirectory.FullName.Equals(t.Root.FullName.ToUpper()))
                 {
                     
                     return drive.AvailableFreeSpace;
-                }                
+                }
+                _log.Debug("{0} != {1} ", drive.RootDirectory.FullName, t.Root.FullName);
             }
 
             return defaultRet;

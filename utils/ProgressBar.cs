@@ -10,15 +10,16 @@ namespace TwoStageFileTransfer.utils
 	/// <summary>
 	/// An ASCII progress bar
 	/// </summary>
-	public class ProgressBar : IDisposable, IProgress<double>
+	public class ProgressBar : IDisposable //, IProgress<double>
 	{
 		private const int blockCount = 10;
-		private readonly TimeSpan animationInterval = TimeSpan.FromSeconds(1.0 / 8);
+		private readonly TimeSpan animationInterval = TimeSpan.FromSeconds(1.0 / 4);
 		private const string animation = @"|/-\";
 
 		private readonly Timer timer;
 
 		private double currentProgress = 0;
+		private string currentProgressText = string.Empty;
 		private string currentText = string.Empty;
 		private bool disposed = false;
 		private int animationIndex = 0;
@@ -36,11 +37,12 @@ namespace TwoStageFileTransfer.utils
 			}
 		}
 
-		public void Report(double value)
+		public void Report(double value, string text)
 		{
 			// Make sure value is in [0..1] range
 			value = Math.Max(0, Math.Min(1, value));
 			Interlocked.Exchange(ref currentProgress, value);
+			Interlocked.Exchange(ref currentProgressText, text);
 		}
 
 		private void TimerHandler(object state)
@@ -51,10 +53,12 @@ namespace TwoStageFileTransfer.utils
 
 				int progressBlockCount = (int)(currentProgress * blockCount);
 				int percent = (int)(currentProgress * 100);
-				string text = string.Format("[{0}{1}] {2,3}% {3}",
+				string text = string.Format("[{0}{1}] {2,3}% {3} {4}",
 					new string('#', progressBlockCount), new string('-', blockCount - progressBlockCount),
 					percent,
-					animation[animationIndex++ % animation.Length]);
+					animation[animationIndex++ % animation.Length],
+					currentProgressText
+					);
 				UpdateText(text);
 
 				ResetTimer();

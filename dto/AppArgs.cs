@@ -16,11 +16,12 @@ namespace TwoStageFileTransfer.dto
         public int BufferSize { get; internal set; }
 
         public bool IsDoCompress { get; internal set; }
-        public int ChunkSize { get; internal set; }
+        public long ChunkSize { get; internal set; }
 
         public AppArgs()
         {
             BufferSize = AppCst.BufferSize;
+            
         }
     }
 }
