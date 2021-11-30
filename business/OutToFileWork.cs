@@ -28,11 +28,12 @@ namespace TwoStageFileTransfer.business
             }
 
 
-
             long totalBytesRead = 0;
             long totalBytesToRead = 0;
             String finalFileName = null;
             int i = 1;
+
+            string sha1FinalFile=null;
 
             if (Source.Name.ToUpper().EndsWith(".TSFT") && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
             {
@@ -40,6 +41,7 @@ namespace TwoStageFileTransfer.business
 
                 totalBytesToRead = long.Parse(configFile[1].Trim());
                 finalFileName = configFile[0].Trim();
+                sha1FinalFile = configFile[2].Trim();
 
                 _firstFile = new FileInfo(Path.Combine(Source.DirectoryName, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0)));
 
@@ -76,7 +78,7 @@ namespace TwoStageFileTransfer.business
             }
 
             Console.Write("Recomposing file... ");
-
+            DateTime mainStart = DateTime.Now;
             using (ProgressBar pbar = new ProgressBar())
             using (FileStream fo = new FileStream(targetFile.FullName, FileMode.Create))
             {
@@ -92,7 +94,7 @@ namespace TwoStageFileTransfer.business
                     {
                         fo.Flush();
                         Console.Title = string.Format("TSFT - Out - Waiting for {0}", currentFileToRead.FullName);
-                        Thread.Sleep(500);
+                        Thread.Sleep(300);
                         currentFileToRead.Refresh();
 
                         if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
@@ -105,10 +107,11 @@ namespace TwoStageFileTransfer.business
                     Console.Title = string.Format("TSFT - Out - {0}", msg);
                     _log.Debug(msg);
 
+                    byte[] buffer = new byte[BufferSize];
                     using (FileStream fr = new FileStream(currentFileToRead.FullName, FileMode.Open))
                     {
 
-                        byte[] buffer = new byte[BufferSize];
+                        Array.Clear(buffer, 0, buffer.Length);
                         int bytesRead;
 
                         while ((bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
@@ -116,7 +119,7 @@ namespace TwoStageFileTransfer.business
                             totalBytesRead += bytesRead;
                             fo.Write(buffer, 0, bytesRead);
                         }
-                        pbar.Report((double)totalBytesRead / totalBytesToRead);
+                        pbar.Report((double)totalBytesRead / totalBytesToRead, "");
 
                     }
 
@@ -124,23 +127,24 @@ namespace TwoStageFileTransfer.business
                     currentFileToRead.Delete();
                     _log.Debug("> File part deleted");
 
-
                     currentFileToRead = new FileInfo(Path.Combine(Source.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
 
-
                 }
-
 
             }
 
             while (AryxDevLibrary.utils.FileUtils.IsFileLocked(targetFile))
             {
-                _log.Debug("> Quasi-done : {0} locked", targetFile.FullName);
+                _log.Debug("> Almost done : {0} locked", targetFile.FullName);
                 Thread.Sleep(500);
             }
 
             targetFile.MoveTo(rTargetFile.FullName);
             Console.WriteLine("Done.");
+            TimeSpan duration = DateTime.Now - mainStart;
+            _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
+
+            CalculculateSourceSha1(targetFile, sha1FinalFile);
 
             return;
         }

@@ -5,6 +5,7 @@ using AryxDevLibrary.utils.cliParser;
 using TwoStageFileTransfer.business;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransfer.constant;
 
 namespace TwoStageFileTransfer
 {
@@ -34,48 +35,64 @@ namespace TwoStageFileTransfer
             LogUtils.WriteConsole(string.Format("Source: {0}", appArgs.Source), _log);
             LogUtils.WriteConsole(string.Format("Target: {0}", appArgs.Target), _log);
             Console.WriteLine();
+            DoWork(appArgs, argsParser);
 
+        }
 
-            switch (appArgs.Direction)
+        private static void DoWork(AppArgs appArgs, AppArgsParser argsParser)
+        {
+            try
             {
-                case "IN":
-                    {
-                        LogUtils.WriteConsole("Mode IN", _log);
 
-                        long maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
-                        LogUtils.WriteConsole(string.Format("Max size used: {0}", AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)), _log);
+                switch (appArgs.Direction)
+                {
+                    case AppCst.MODE_IN:
+                        {
+                            LogUtils.WriteConsole("Mode IN", _log);
 
-                        InToOutWork w = new InToOutWork(maxTransferLenght, appArgs.ChunkSize, appArgs.IsDoCompress);
-                        w.Source = new FileInfo(appArgs.Source);
-                        w.Target = appArgs.Target;
-                        w.BufferSize = appArgs.BufferSize;
+                            long maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
+                            LogUtils.WriteConsole(string.Format("Max size that can be used: {0}", AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)), _log);
 
-                        w.DoTransfert();
+                            InToOutWork w = new InToOutWork(maxTransferLenght, appArgs.ChunkSize, appArgs.IsDoCompress);
+                            w.Source = new FileInfo(appArgs.Source);
+                            w.Target = appArgs.Target;
+                            w.BufferSize = appArgs.BufferSize;
+
+                            w.DoTransfert();
+                            break;
+                        }
+                    case AppCst.MODE_OUT:
+                        {
+                            LogUtils.WriteConsole("Mode OUT", _log);
+
+                            OutToFileWork o = new OutToFileWork();
+                            o.Source = new FileInfo(appArgs.Source);
+                            o.Target = appArgs.Target;
+                            o.BufferSize = appArgs.BufferSize;
+
+                            o.DoTransfert();
+                            break;
+                        }
+                    default:
+                        argsParser.ShowSyntax();
                         break;
-                    }
-                case "OUT":
-                    {
-                        LogUtils.WriteConsole("Mode OUT", _log);
-
-                        OutToFileWork o = new OutToFileWork();
-                        o.Source = new FileInfo(appArgs.Source);
-                        o.Target = appArgs.Target;
-                        o.BufferSize = appArgs.BufferSize;
-
-                        o.DoTransfert();
-                        break;
-                    }
-                default:
-                    argsParser.ShowSyntax();
-                    break;
+                }
             }
+            catch (Exception e)
+            {
+                LogUtils.WriteConsole("Error : " + e.Message, _log);
+                _log.Error(e.StackTrace);
 
-
+            }
+            finally
+            {
+                Console.WriteLine();
+            }
         }
 
         private static void InitLogAndAskForParams(AppArgs appArgs)
         {
-            if (appArgs.Direction == "IN")
+            if (appArgs.Direction == AppCst.MODE_IN)
             {
                 _log = new Logger("log-IN.log", Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
 
@@ -88,6 +105,7 @@ namespace TwoStageFileTransfer
                         Console.WriteLine("The file '{0}' doesnt exist.", rawSource);
                         rawSource = Console.ReadLine()?.Trim(new[] { ' ', '"' });
                     }
+                    appArgs.Source = rawSource;
                 }
 
                 if (appArgs.Target == null)
@@ -99,9 +117,10 @@ namespace TwoStageFileTransfer
                         Console.WriteLine("The target '{0}' doesnt exist.", rawTarget);
                         rawTarget = Console.ReadLine()?.Trim(new[] { ' ', '"' });
                     }
+                    appArgs.Target = rawTarget;
                 }
             }
-            else if (appArgs.Direction == "OUT")
+            else if (appArgs.Direction == AppCst.MODE_OUT)
             {
                 _log = new Logger("log-OUT.log", Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
 
@@ -127,6 +146,7 @@ namespace TwoStageFileTransfer
                     }
                 }
             }
+
         }
     }
 }

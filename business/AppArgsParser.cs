@@ -128,17 +128,24 @@ namespace TwoStageFileTransfer.business
                 }
             }
 
-            if (HasOption(_optBufferSize, arg))
+            if (HasOption(_optChunkSize, arg))
             {
-                string rawChunkSize = GetSingleOptionValue(_optBufferSize, arg);
-                if (int.TryParse(rawChunkSize, out var chunkSize) && chunkSize >= 1024)
+                string rawChunkSize = GetSingleOptionValue(_optChunkSize, arg);
+                long res = (long)AryxDevLibrary.utils.FileUtils.HumanReadableSizeToLong(rawChunkSize);
+                if (res != -1 )
+                {                    
+                    retArgs.ChunkSize = res;
+                }
+                else if (long.TryParse(rawChunkSize, out var chunkSize))
                 {
                     retArgs.ChunkSize = chunkSize;
                 }
-                else
+
+                if (retArgs.ChunkSize  < 1024)                
                 {
                     throw new CliParsingException("Part file size muse be greater or equal than 1024 o");
                 }
+
             }
             else
             {
