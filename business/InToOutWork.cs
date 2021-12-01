@@ -46,6 +46,7 @@ namespace TwoStageFileTransfer.business
             WarnForCompressedTargetDir(Target);
             string sha1 = CalculculateSourceSha1(Source);
 
+            /*
             if (_isDoCompressBefore)
             {
                 FileInfo newSource = new FileInfo(Path.GetTempFileName());
@@ -57,7 +58,7 @@ namespace TwoStageFileTransfer.business
 
                 Source = newSource;
 
-            }
+            }*/
 
             Console.Write("Creating part files... ");
             DateTime mainStart = DateTime.Now;

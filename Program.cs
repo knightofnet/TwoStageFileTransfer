@@ -1,6 +1,7 @@
 ﻿using AryxDevLibrary.utils.logger;
 using System;
 using System.IO;
+using System.Reflection;
 using AryxDevLibrary.utils.cliParser;
 using TwoStageFileTransfer.business;
 using TwoStageFileTransfer.dto;
@@ -15,6 +16,8 @@ namespace TwoStageFileTransfer
 
         static void Main(string[] args)
         {
+            AppHeader();
+
             AppArgs appArgs;
             AppArgsParser argsParser = new AppArgsParser();
             try
@@ -43,32 +46,35 @@ namespace TwoStageFileTransfer
         {
             try
             {
-
                 switch (appArgs.Direction)
                 {
                     case AppCst.MODE_IN:
                         {
-                            LogUtils.WriteConsole("Mode IN", _log);
+                            LogUtils.WriteConsole("Mode IN : transfer file from source to temp and shared folder", _log);
 
                             long maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
                             LogUtils.WriteConsole(string.Format("Max size that can be used: {0}", AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)), _log);
 
-                            InToOutWork w = new InToOutWork(maxTransferLenght, appArgs.ChunkSize, appArgs.IsDoCompress);
-                            w.Source = new FileInfo(appArgs.Source);
-                            w.Target = appArgs.Target;
-                            w.BufferSize = appArgs.BufferSize;
+                            InToOutWork w = new InToOutWork(maxTransferLenght, appArgs.ChunkSize, appArgs.IsDoCompress)
+                            {
+                                Source = new FileInfo(appArgs.Source),
+                                Target = appArgs.Target,
+                                BufferSize = appArgs.BufferSize
+                            };
 
                             w.DoTransfert();
                             break;
                         }
                     case AppCst.MODE_OUT:
                         {
-                            LogUtils.WriteConsole("Mode OUT", _log);
+                            LogUtils.WriteConsole("Mode OUT : recompose target file from part files from shared folder", _log);
 
-                            OutToFileWork o = new OutToFileWork();
-                            o.Source = new FileInfo(appArgs.Source);
-                            o.Target = appArgs.Target;
-                            o.BufferSize = appArgs.BufferSize;
+                            OutToFileWork o = new OutToFileWork
+                            {
+                                Source = new FileInfo(appArgs.Source),
+                                Target = appArgs.Target,
+                                BufferSize = appArgs.BufferSize
+                            };
 
                             o.DoTransfert();
                             break;
@@ -88,6 +94,15 @@ namespace TwoStageFileTransfer
             {
                 Console.WriteLine();
             }
+        }
+
+        private static void AppHeader()
+        {
+            Console.WriteLine();
+            Console.WriteLine("-------------------------------------------------------------------------------");
+            Console.WriteLine("   TWO-STAGE FILE TRANSFER  ::  {0}", Assembly.GetExecutingAssembly().GetName().Version);
+            Console.WriteLine("-------------------------------------------------------------------------------");
+            Console.WriteLine();
         }
 
         private static void InitLogAndAskForParams(AppArgs appArgs)
