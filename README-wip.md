@@ -38,7 +38,7 @@
 <h3 align="center">Two-stage File Transfer</h3>
 
   <p align="center">
-    project_description
+    TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
     <br />
     <a href="https://github.com/knightofnet/TwoStageFileTransfer"><strong>Explore the docs »</strong></a>
     <br />
@@ -71,7 +71,6 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -86,8 +85,11 @@
 
 [![Product Name Screen Shot][product-screenshot]](https://example.com)
 
+TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
 
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `knightofnet`, `repo_name`, `wolfaryx`, `linkedin_username`, `email`, `email_client`, `Two-stage File Transfer`, `project_description`
+I started this project because in my company, I work on a computer but also on a remote desktop. In this configuration, a network drive shared between the two machines allows data and file exchanges. The problem is that this network drive (shared) is limited in size: it is therefore not possible to transfer large files between the two machines in a simple way (or else, by going through a multi-part archive and then exchanging a few parts, but this is... laborious for an operation that should be simple in the beginning).
+
+That's what this tool was born from.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -116,27 +118,24 @@ To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ```
+This application runs on Microsoft Windows with .net Framework 4.5.2.
+
+To test that you have the minimum version required, you can run this Powershell command:
+
+1. Open Powershell buy typing ```powershell``` into command prompt, or start menu.
+2. Write this 
+```
+(Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release -ge 379893
+```
+and valid with return.
+
+3. If you can see ```True```, then everything is OK. Else, download and install .net Framework 4.5.2 [here](https://www.microsoft.com/fr-fr/download/details.aspx?id=42642).
+
 
 ### Installation
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/knightofnet/TwoStageFileTransfer.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
+1. Download latest release [here]().
+2. Extract the archive in a folder.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -150,21 +149,6 @@ Use this space to show useful examples of how a project can be used. Additional 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [] Feature 1
-- [] Feature 2
-- [] Feature 3
-    - [] Nested Feature
-
-See the [open issues](https://github.com/knightofnet/TwoStageFileTransfer/issues) for a full list of proposed features (and known issues).
-
-<p align="right">(<a href="#top">back to top</a>)</p>
-
 
 
 <!-- CONTRIBUTING -->
@@ -197,7 +181,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Your Name - [@wolfaryx](https://twitter.com/wolfaryx) - email@email_client.com
+Aryx - [@wolfaryx](https://twitter.com/wolfaryx) (wolfaryx [AT] gmail [DOT] com)
 
 Project Link: [https://github.com/knightofnet/TwoStageFileTransfer](https://github.com/knightofnet/TwoStageFileTransfer)
 
@@ -208,7 +192,7 @@ Project Link: [https://github.com/knightofnet/TwoStageFileTransfer](https://gith
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
-* []()
+* The translation and the assistance to the translation were realized with DeepL [https://www.deepl.com/translator](https://www.deepl.com/translator)
 * []()
 * []()
 
