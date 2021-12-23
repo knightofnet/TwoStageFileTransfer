@@ -23,18 +23,18 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
+<!--[![MIT License][license-shield]][license-url]-->
 
 
 
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
+<!--
   <a href="https://github.com/knightofnet/TwoStageFileTransfer">
     <img src="images/logo.png" alt="Logo" width="80" height="80">
   </a>
-
+-->
 <h3 align="center">Two-stage File Transfer</h3>
 
   <p align="center">
@@ -43,8 +43,6 @@
     <a href="https://github.com/knightofnet/TwoStageFileTransfer"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/knightofnet/TwoStageFileTransfer">View Demo</a>
-    ·
     <a href="https://github.com/knightofnet/TwoStageFileTransfer/issues">Report Bug</a>
     ·
     <a href="https://github.com/knightofnet/TwoStageFileTransfer/issues">Request Feature</a>
@@ -72,7 +70,6 @@
     </li>
     <li><a href="#usage">Usage</a></li>
     <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
@@ -82,8 +79,6 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
 
 TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
 
@@ -97,7 +92,7 @@ That's what this tool was born from.
 
 ### Built Using
 
-* [AryxDevLibrary](https://www.nuget.org/packages/AryxDevLibrary/)
+* [AryxDevLibrary (by me)](https://www.nuget.org/packages/AryxDevLibrary/)
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
@@ -223,13 +218,13 @@ Don't forget to give the project a star! Thanks again!
 
 
 
-<!-- LICENSE -->
+<!-- LICENSE 
 ## License
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
-
+-->
 
 
 <!-- CONTACT -->
@@ -246,9 +241,13 @@ Project Link: [https://github.com/knightofnet/TwoStageFileTransfer](https://gith
 <!-- ACKNOWLEDGMENTS -->
 ## Acknowledgments
 
+* For some methods or some help, thanks to :
+  * Matthew Watson, [*"get free space on network share"*](https://social.msdn.microsoft.com/Forums/en-US/b7db7ec7-34a5-4ca6-89e7-947190c4e043/get-free-space-on-network-share?forum=csharpgeneral).
+  * Simon Mourier, for his cool select folder dialog on this *StackOverFlow's* thread [*"How to use OpenFileDialog to select a folder?"*](https://stackoverflow.com/a/66187224).
+  * Simon Mourier (*again - just realize it's the same person who, indirectly, helps me twice*), for his solution to get the calling process on this *StackOverFlow's* thread [*"How to get parent process in .NET in managed way"*](https://stackoverflow.com/a/3346055) by Abatishchev.
 * The translation and the assistance to the translation were realized with DeepL [https://www.deepl.com/translator](https://www.deepl.com/translator)
-* []()
-* []()
+* Template of this README.MD file available [here](https://github.com/othneildrew/Best-README-Template).
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
