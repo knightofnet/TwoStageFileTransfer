@@ -38,7 +38,7 @@
 <h3 align="center">Two-stage File Transfer</h3>
 
   <p align="center">
-    TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
+    TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow direct intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
     <br />
     <a href="https://github.com/knightofnet/TwoStageFileTransfer"><strong>Explore the docs »</strong></a>
     <br />
@@ -80,7 +80,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
+TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow direct intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
 
 I started this project because in my company, I work on a computer but also on a remote desktop. In this configuration, a network drive shared between the two machines allows data and file exchanges. The problem is that this network drive (shared) is limited in size: it is therefore not possible to transfer large files between the two machines in a simple way (or else, by going through a multi-part archive and then exchanging a few parts, but this is... laborious for an operation that should be simple in the beginning).
 
