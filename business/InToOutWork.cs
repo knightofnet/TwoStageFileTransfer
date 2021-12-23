@@ -22,7 +22,7 @@ namespace TwoStageFileTransfer.business
         private long _totalBytesRead = 0;
         private byte[] _buffer;
 
-        public long MaxTransfertLength => _maxTransferFile;
+        
 
         public InToOutWork(long maxTransfertLength, long chunkSize, bool isDoCompressBefore = false)
         {
@@ -35,10 +35,10 @@ namespace TwoStageFileTransfer.business
             long partFileMaxLenght = _chunkSize;
             if (partFileMaxLenght == -1)
             {
-                partFileMaxLenght = Math.Min((long)_maxTransferFile / 10, 50 * 1024 * 1024);
+                partFileMaxLenght = Math.Min(_maxTransferFile / 10, 50 * 1024 * 1024);
             }
 
-            partFileMaxLenght = (new[] { MaxTransfertLength, partFileMaxLenght, Source.Length }).Min();
+            partFileMaxLenght = new[] { _maxTransferFile, partFileMaxLenght, Source.Length }.Min();
 
             LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
 

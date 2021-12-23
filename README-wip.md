@@ -95,16 +95,10 @@ That's what this tool was born from.
 
 
 
-### Built With
+### Built Using
 
-* [Next.js](https://nextjs.org/)
-* [React.js](https://reactjs.org/)
-* [Vue.js](https://vuejs.org/)
-* [Angular](https://angular.io/)
-* [Svelte](https://svelte.dev/)
-* [Laravel](https://laravel.com)
-* [Bootstrap](https://getbootstrap.com)
-* [JQuery](https://jquery.com)
+* [AryxDevLibrary](https://www.nuget.org/packages/AryxDevLibrary/)
+
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
@@ -144,9 +138,69 @@ and valid with return.
 <!-- USAGE EXAMPLES -->
 ## Usage
 
+The main use of the application is through the command line and input parameters. Here is the list of usable parameters:
+
+```
+Syntax: tsft.exe OPTIONS
+
+OPTIONS :
+    -d    Required. Transfer direction. Values : in,out (also : --direction)
+    -s    Path to source file. For the 'in' mode, the file to be transfered. For the 'out' mode the first transfert file (or the folder containing this first file) (also : --source)
+    -t    Path to the target. For the 'in' mode, to the folder where to generate the transfer files. for the 'out' mode, the folder where the file will be placed (also : --target)
+    -b    Buffer size. Default: 8192 (also : --buffer-size)
+    -c    Force part file size. Default: file size divided by 10, or max 50Mo (also : --chunk)
+    -w    Overwrite existing files. Default: none (also : --overwrite)
+```
+This list is displayed when the program is invoked without parameters.
+
+### When this program can help ?
+
+This program is mainly useful in the context of an internal network (business or home), when it is necessary to transfer a file from one computer to another, passing through an temporary folder such in a third-party computer, in a NAS or in a box-modem with an internal disk that serves as a folder; in fact anything that can be used as a Windows folder. This folder can have a size constraint and this tool will be able to manage it.
+
+The program works in **two asynchronous stages** :
+
+- The first stage consists of executing the program on a source computer: the latter will then split the source file into small intermediate files which will then be placed in the temporary folder. When the disk is full in this folder the program waits for the second stage to consume the intermediate files to continue.
+
+- The second step runs on the target computer: it will recreate the file on the target computer using the intermediate files. If intermediate files are still being created by the first step, the program will wait.
+
+
+
+### Simple transfer
+
+To transfer a file from one computer to another, through a temporary folder, use the following commands:
+
+- First stage (direction ``in``) : 
+
+On the source computer (decompose the file to the temporary folder), type this :
+```
+tsft.exe -d in -s "C:\Folder\MyFile.bin" -t "W:\tempAndSharedFolder\"
+```
+It will split ``MyFile.bin`` into some part files (named with suffix partX, where X starting from 0) whose size depends on the available disk space. 
+
+
+- Second stage (direction ``out``) : 
+
+On the target computer (re-compose the file from the temporary folder):
+```
+tsft.exe -d out -s "W:\tempAndSharedFolder\" -t "D:\FinalFolder\"
+```
+
+*Remarks :*
+
+1. When you generate parts files with first stage (in mode), a tsft file is created by the program (generally with same name that source file). This file helps the seconde stage (out mode) to work and add a final SHA1 verification to ensure file's integrity. This tsft file can be source for second stage. Example :
+
+```
+tsft.exe -d out -s "W:\tempAndSharedFolder\MyFile.tsft" -t "D:\FinalFolder\"
+```
+
+2. Part-files's size depends on available disk space. By default, less than 10% remaining free-space by file, or 50 Mo max. This can be overrided by ``-c`` parameter.
+
+3. If source or target parameters are missing, the user will be prompted to fill them in. Into the console if the program is run in commands prompt, or with classics windows if the program is runned with explorer (or by using a classic shortcut). By ommiting these parameters and simply passing tsft file as paramater, the direction ``out`` is automaticaly setted and you will be prompted to select targer folder for recomposing file.
+
+4. As soon as the TSFT file is created (or as soon as the *.part0 file is created) in the shared folder, then it is possible to run the program for the second step.
+
 Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
-_For more examples, please refer to the [Documentation](https://example.com)_
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 

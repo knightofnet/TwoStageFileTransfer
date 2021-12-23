@@ -14,6 +14,7 @@ namespace TwoStageFileTransfer.utils
 
         /// <summary>
         /// A utility class to determine a process parent.
+        /// https://stackoverflow.com/a/3346055
         /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         public struct ParentProcessUtilities

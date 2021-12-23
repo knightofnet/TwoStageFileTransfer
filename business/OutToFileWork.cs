@@ -20,7 +20,7 @@ namespace TwoStageFileTransfer.business
                 Console.WriteLine("Error : no first file provided");
                 return;
             }
-            else if (!Source.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
+            if (!Source.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
             {
                 // ERROR
                 Console.WriteLine("Error : '{0}' doesnt exist", Source.FullName);

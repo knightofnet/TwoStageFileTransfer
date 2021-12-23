@@ -49,7 +49,7 @@ namespace TwoStageFileTransfer.business
         {
             ShortOpt = "c",
             LongOpt = "chunk",
-            Description = "Force part file size. Default: file size divided by 5, or max 50Mo",
+            Description = "Force part file size. Default: file size divided by 10, or max 50Mo",
             HasArgs = true,
             Name = "_optChunkSize",
             IsMandatory = false
@@ -115,7 +115,7 @@ namespace TwoStageFileTransfer.business
             {
                 throw new CliParsingException("Direction must be 'in' or 'out'");
             }
-            StrCommand.AppendFormat("{0} {1} ", _optSens.LongOpt, retArgs.Direction);
+            StrCommand.AppendFormat("--{0} {1} ", _optSens.LongOpt, retArgs.Direction);
 
 
             if (HasOption(_optSource, arg))
@@ -125,7 +125,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException($"Source '{retArgs.Source}' must exist");
                 }
-                StrCommand.AppendFormat("{0} {1} ", _optSource.LongOpt, retArgs.Source);
+                StrCommand.AppendFormat("--{0} {1} ", _optSource.LongOpt, retArgs.Source);
             }
 
             if (HasOption(_optTarget, arg))
@@ -135,7 +135,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException($"Target '{retArgs.Target}' must exist");
                 }
-                StrCommand.AppendFormat("{0} {1} ", _optTarget.LongOpt, retArgs.Target);
+                StrCommand.AppendFormat("--{0} {1} ", _optTarget.LongOpt, retArgs.Target);
             }
 
             if (HasOption(_optBufferSize, arg))
@@ -144,7 +144,7 @@ namespace TwoStageFileTransfer.business
                 if (int.TryParse(rawBufferSize, out var bufferSize))
                 {
                     retArgs.BufferSize = bufferSize;
-                    StrCommand.AppendFormat("{0} {1} ", _optBufferSize.LongOpt, retArgs.BufferSize);
+                    StrCommand.AppendFormat("--{0} {1} ", _optBufferSize.LongOpt, retArgs.BufferSize);
                 }
                 
             }
@@ -166,7 +166,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException("Part file size muse be greater or equal than 1024 o");
                 }
-                StrCommand.AppendFormat("{0} {1} ", _optChunkSize.LongOpt, retArgs.ChunkSize);
+                StrCommand.AppendFormat("--{0} {1} ", _optChunkSize.LongOpt, retArgs.ChunkSize);
 
             }
             else
@@ -177,13 +177,13 @@ namespace TwoStageFileTransfer.business
             if (HasOption(_optDoCompress, arg))
             {
                 retArgs.IsDoCompress = HasOption(_optDoCompress, arg);
-                StrCommand.AppendFormat("{0} {1} ", _optDoCompress.LongOpt, retArgs.IsDoCompress);
+                StrCommand.AppendFormat("--{0} ", _optDoCompress.LongOpt, retArgs.IsDoCompress);
             }
 
             if (HasOption(_optCanOverwrite, arg))
             {
                 retArgs.CanOverwrite = HasOption(_optCanOverwrite, arg);
-                StrCommand.AppendFormat("{0} {1} ", _optCanOverwrite.LongOpt, retArgs.CanOverwrite);
+                StrCommand.AppendFormat("{0} ", _optCanOverwrite.LongOpt, retArgs.CanOverwrite);
             }
 
             return retArgs;

@@ -103,13 +103,18 @@ namespace TwoStageFileTransfer
             appArgs.SourceRun = SourceRuns.Undetermined;
             switch (sourceProcessName)
             {
+
+                case "explorer":
+                    appArgs.SourceRun = SourceRuns.Explorer;
+                    _modeRun = new ExplorerRun();
+                    break;
                 case "cmd":
                     appArgs.SourceRun = SourceRuns.CommandPrompt;
                     _modeRun = new CmdRun();
                     break;
-                case "explorer":
-                    appArgs.SourceRun = SourceRuns.Explorer;
-                    _modeRun = new ExplorerRun();
+                default:
+                    appArgs.SourceRun = SourceRuns.CommandPrompt;
+                    _modeRun = new CmdRun();
                     break;
             }
 
