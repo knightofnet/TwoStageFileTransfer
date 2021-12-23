@@ -248,6 +248,7 @@ Project Link: [https://github.com/knightofnet/TwoStageFileTransfer](https://gith
 * The translation and the assistance to the translation were realized with DeepL [https://www.deepl.com/translator](https://www.deepl.com/translator)
 * Template of this README.MD file available [here](https://github.com/othneildrew/Best-README-Template).
 
+*I like to think that programming is like playing with legos: you assemble blocks to form algorithms, functions, classes. At the end, it gives a program! (... and then you just spend your time to make it even better, or you start from the beginning for another one!)*
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
