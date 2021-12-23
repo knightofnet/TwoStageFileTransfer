@@ -9,6 +9,7 @@ using System.Threading;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
+using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
 namespace TwoStageFileTransfer.business
 {
@@ -18,6 +19,8 @@ namespace TwoStageFileTransfer.business
         private readonly long _maxTransferFile;
         private readonly long _chunkSize;
         private readonly bool _isDoCompressBefore;
+        private long _totalBytesRead = 0;
+        private byte[] _buffer;
 
         public long MaxTransfertLength => _maxTransferFile;
 
@@ -29,36 +32,25 @@ namespace TwoStageFileTransfer.business
         }
         public void DoTransfert()
         {
-
-            long totalBytesRead = 0;
-
-            long chunk = _chunkSize;
-            if (chunk == -1)
+            long partFileMaxLenght = _chunkSize;
+            if (partFileMaxLenght == -1)
             {
-                chunk = Math.Min((long)_maxTransferFile / 10, 50 * 1024 * 1024);
+                partFileMaxLenght = Math.Min((long)_maxTransferFile / 10, 50 * 1024 * 1024);
             }
-            LogUtils.WriteConsole(string.Format("Part file size: {0}", AryxDevLibrary.utils.FileUtils.HumanReadableSize(chunk)), _log);
 
-            int i = 0;
+            partFileMaxLenght = (new[] { MaxTransfertLength, partFileMaxLenght, Source.Length }).Min();
+
+            LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
+
+            int fileCreatedIndex = 0;
 
             HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
 
             WarnForCompressedTargetDir(Target);
+            TestFilesNotAlreadyExist(Source, Target, partFileMaxLenght, !CanOverwrite);
+
             string sha1 = CalculculateSourceSha1(Source);
 
-            /*
-            if (_isDoCompressBefore)
-            {
-                FileInfo newSource = new FileInfo(Path.GetTempFileName());
-                if (newSource.Exists) newSource.Delete();
-                using (var archive = ZipFile.Open(newSource.FullName, ZipArchiveMode.Create))
-                {
-                    archive.CreateEntryFromFile(Source.FullName, Source.Name, CompressionLevel.Optimal);
-                }
-
-                Source = newSource;
-
-            }*/
 
             Console.Write("Creating part files... ");
             DateTime mainStart = DateTime.Now;
@@ -66,63 +58,32 @@ namespace TwoStageFileTransfer.business
             {
                 using (FileStream fs = new FileStream(Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan))
                 {
+                    _buffer = new byte[BufferSize];
 
-                    while (totalBytesRead < fs.Length)
+                    while (_totalBytesRead < fs.Length)
                     {
-                        long localBytesRead = 0;
-                        AppFile fileOutPath = new AppFile(Target, FileUtils.GetFileName(Source.Name, fs.Length, i))
-                        {
-                            IsNormalFile = false
-                        };
+
+                        AppFile fileOutPath = new AppFile(Target, FileUtils.GetFileName(Source.Name, fs.Length, fileCreatedIndex));
 
                         DateTime localStart = DateTime.Now;
 
-                        byte[] buffer = new byte[BufferSize];
-                        using (FileStream fo = new FileStream(fileOutPath.FullName, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, false))
-                        {
-                            fo.SetLength(Math.Min(chunk, Source.Length - totalBytesRead));
+                        long localBytesRead = WritePartFile(partFileMaxLenght, pbar, fs, fileOutPath, localStart);
 
-                            string msg = "Creating part file " + fileOutPath.GetNormalFileInfo().Name;
-                            Console.Title = string.Format("TSFT - In - {0}", msg);
-                            _log.Debug(msg);
-
-                            Array.Clear(buffer, 0, buffer.Length);
-                            int bytesRead;
-
-                            while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
-                            {
-                                totalBytesRead += bytesRead;
-                                localBytesRead += bytesRead;
-
-                                fo.Write(buffer, 0, bytesRead);
-
-                                if (localBytesRead + BufferSize > chunk || localBytesRead + BufferSize > _maxTransferFile)
-                                {
-                                    break;
-                                }
-                            }
-
-                        }
-
-                        pbar.Report((double)totalBytesRead / fs.Length, GetTransferSpeed(localBytesRead, localStart));
-
-                        fileOutPath.IsNormalFile = true;
-                        fileOutPath.MoveToNormal();
                         fileOutPath.File.Attributes = FileAttributes.Hidden | FileAttributes.Archive |
                                                       FileAttributes.Temporary | FileAttributes.NotContentIndexed;
                         listFiles.Add(fileOutPath.File);
                         _log.Debug("> OK");
 
-                        if (totalBytesRead + BufferSize > _maxTransferFile)
+                        if (_totalBytesRead + BufferSize > _maxTransferFile)
                         {
                             WaitForFreeSpace(listFiles);
                         }
 
-                        if (i == 0)
+                        if (fileCreatedIndex == 0)
                         {
                             WriteTransferExchangeFile(Source.Name, Source.Length, sha1);
                         }
-                        i++;
+                        fileCreatedIndex++;
                     }
                 }
             }
@@ -132,19 +93,96 @@ namespace TwoStageFileTransfer.business
 
         }
 
+        private long WritePartFile(long chunk, ProgressBar pbar, FileStream fs, AppFile fileOutPath, DateTime localStart)
+        {
+            long localBytesRead = 0;
+
+            try
+            {
+
+                using (FileStream fo = new FileStream(fileOutPath.TempFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, false))
+                {
+                    fo.SetLength(Math.Min(chunk, Source.Length - _totalBytesRead));
+
+                    string msg = "Creating part file " + fileOutPath.File.Name;
+                    Console.Title = $"TSFT - In - {msg}";
+                    _log.Debug(msg);
+
+                    Array.Clear(_buffer, 0, _buffer.Length);
+                    int bytesRead;
+
+                    while ((bytesRead = fs.Read(_buffer, 0, _buffer.Length)) > 0)
+                    {
+                        _totalBytesRead += bytesRead;
+                        localBytesRead += bytesRead;
+
+                        fo.Write(_buffer, 0, bytesRead);
+
+                        if (localBytesRead + BufferSize > chunk ||
+                            localBytesRead + BufferSize > _maxTransferFile)
+                        {
+                            break;
+                        }
+                    }
+
+                }
+
+                pbar.Report((double)_totalBytesRead / fs.Length, GetTransferSpeed(localBytesRead, localStart));
+                
+                fileOutPath.MoveToNormal();
+            }
+            catch (Exception ex)
+            {
+                if (fileOutPath.TempFile.Exists)
+                {
+                    fileOutPath.TempFile.Delete();
+                    throw ex;
+                }
+            }
+
+            return localBytesRead;
+        }
+
+        private void TestFilesNotAlreadyExist(FileInfo source, string target, long chunkSize, bool exceptionIfExists = false)
+        {
+            long nbFiles = (source.Length / chunkSize) + (source.Length % chunkSize == 0 ? 0 : 1);
+            for (long i = 0; i < nbFiles; i++)
+            {
+                String tmpFile = Path.Combine(target, "~" + FileUtils.GetFileName(Source.Name, source.Length, i));
+                if (File.Exists(tmpFile))
+                {
+                    _log.Debug("File {0} already exists.", tmpFile);
+                    File.Delete(tmpFile);
+                }
+
+                String realPartFile = Path.Combine(target, FileUtils.GetFileName(Source.Name, source.Length, i));
+                if (File.Exists(realPartFile))
+                {
+                    if (exceptionIfExists)
+                    {
+                        throw new IOException($"File {realPartFile} already exists.");
+                    }
+
+                    _log.Warn("File {0} already exists.", realPartFile);
+                    File.Delete(realPartFile);
+
+                }
+            }
+        }
+
         private void WarnForCompressedTargetDir(string target)
         {
             DirectoryInfo targetDir = new DirectoryInfo(target);
             if (targetDir.Attributes.HasFlag(FileAttributes.Compressed))
             {
-                LogUtils.WriteConsole(String.Format("Target '{0}' is compressed, this can lead to degraded performance", target), _log);
+                LogUtils.I(_log, $"Target '{target}' is compressed, this can lead to degraded performance");
             }
 
             DriveInfo[] drives = DriveInfo.GetDrives();
             foreach (DriveInfo drive in drives)
             {
                 if (!drive.IsReady)
-                {              
+                {
                     continue;
                 }
 
@@ -152,14 +190,15 @@ namespace TwoStageFileTransfer.business
                 {
                     if (drive.DriveType == DriveType.Network)
                     {
-                        LogUtils.WriteConsole(String.Format("Target '{0}' is on a network drive, this can lead to degraded performance", target), _log);
-                    } else if (drive.DriveType == DriveType.Removable)
+                        LogUtils.I(_log, $"Target '{target}' is on a network drive, this can lead to degraded performance");
+                    }
+                    else if (drive.DriveType == DriveType.Removable)
                     {
-                        LogUtils.WriteConsole(String.Format("Target '{0}' is on a removable drive, this can lead to degraded performance", target), _log);
+                        LogUtils.I(_log, $"Target '{target}' is on a removable drive, this can lead to degraded performance");
                     }
 
                 }
-      
+
             }
         }
 
@@ -168,7 +207,7 @@ namespace TwoStageFileTransfer.business
             long diffTime = (long)(DateTime.Now - timeStart).TotalSeconds;
             if (diffTime == 0) return string.Empty;
 
-            return "~" + AryxDevLibrary.utils.FileUtils.HumanReadableSize(localBytesRead / diffTime) + "/s [last part]";
+            return "~" + AFileUtils.HumanReadableSize(localBytesRead / diffTime) + "/s [last part]";
         }
 
         private void WaitForFreeSpace(HashSet<FileInfo> listFiles)
@@ -185,14 +224,14 @@ namespace TwoStageFileTransfer.business
             while (filesSize + BufferSize > _maxTransferFile)
             {
                 HashSet<FileInfo> setFilesExist = new HashSet<FileInfo>(listFiles.Where(r =>
-                   {
-                       r.Refresh();
-                       return r.Exists;
-                   }).ToList())
-                    ;
+                {
+                    r.Refresh();
+                    return r.Exists;
+                }).ToList());
+                    
                 filesSize = setFilesExist.Sum(f => f.Length);
 
-                Console.Title = string.Format("TSFT - In - {0}", "Waiting for OUT mode to work and freeing disk space...");
+                Console.Title = $"TSFT - In - {"Waiting for OUT mode to work and freeing disk space..."}";
                 if (mustWriteLogStatus)
                 {
                     _log.Info("Waiting for OUT mode to work and freeing disk space : {0} + {1} > {2}", filesSize, BufferSize, _maxTransferFile);

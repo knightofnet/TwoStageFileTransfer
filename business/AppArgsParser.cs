@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using TwoStageFileTransfer.constant;
@@ -74,6 +75,16 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
+        private static readonly Option _optCanOverwrite = new Option()
+        {
+            ShortOpt = "w",
+            LongOpt = "overwrite",
+            Description = "Overwrite existing files. Default: none",
+            HasArgs = false,
+            Name = "_optCanOverwrite",
+            IsMandatory = false
+        };
+
         public AppArgsParser()
         {
             AddOption(_optSens);
@@ -82,8 +93,11 @@ namespace TwoStageFileTransfer.business
             //AddOption(_optDoCompress);
             AddOption(_optBufferSize);
             AddOption(_optChunkSize);
+            AddOption(_optCanOverwrite);
 
         }
+
+        public StringBuilder StrCommand { get; set; }
 
         public override AppArgs ParseDirect(string[] args)
         {
@@ -93,12 +107,15 @@ namespace TwoStageFileTransfer.business
         private AppArgs ParseTrt(Dictionary<string, Option> arg)
         {
             AppArgs retArgs = new AppArgs();
+            StrCommand = new StringBuilder(Path.GetFileName(Assembly.GetExecutingAssembly().Location) + " ");
+            
 
             retArgs.Direction = GetSingleOptionValue(_optSens, arg).ToUpper();
-            if (retArgs.Direction != "IN" && retArgs.Direction != "OUT")
+            if (retArgs.Direction != AppCst.MODE_IN && retArgs.Direction != AppCst.MODE_OUT)
             {
                 throw new CliParsingException("Direction must be 'in' or 'out'");
             }
+            StrCommand.AppendFormat("{0} {1} ", _optSens.LongOpt, retArgs.Direction);
 
 
             if (HasOption(_optSource, arg))
@@ -106,8 +123,9 @@ namespace TwoStageFileTransfer.business
                 retArgs.Source = GetSingleOptionValue(_optSource, arg);
                 if (!File.Exists(retArgs.Source) && !Directory.Exists(retArgs.Source))
                 {
-                    throw new CliParsingException(string.Format("Source '{0}' must exist", retArgs.Source));
+                    throw new CliParsingException($"Source '{retArgs.Source}' must exist");
                 }
+                StrCommand.AppendFormat("{0} {1} ", _optSource.LongOpt, retArgs.Source);
             }
 
             if (HasOption(_optTarget, arg))
@@ -115,8 +133,9 @@ namespace TwoStageFileTransfer.business
                 retArgs.Target = GetSingleOptionValue(_optTarget, arg);
                 if (!File.Exists(retArgs.Target) && !Directory.Exists(retArgs.Target))
                 {
-                    throw new CliParsingException(string.Format("Target '{0}' must exist", retArgs.Target));
+                    throw new CliParsingException($"Target '{retArgs.Target}' must exist");
                 }
+                StrCommand.AppendFormat("{0} {1} ", _optTarget.LongOpt, retArgs.Target);
             }
 
             if (HasOption(_optBufferSize, arg))
@@ -125,7 +144,9 @@ namespace TwoStageFileTransfer.business
                 if (int.TryParse(rawBufferSize, out var bufferSize))
                 {
                     retArgs.BufferSize = bufferSize;
+                    StrCommand.AppendFormat("{0} {1} ", _optBufferSize.LongOpt, retArgs.BufferSize);
                 }
+                
             }
 
             if (HasOption(_optChunkSize, arg))
@@ -145,6 +166,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException("Part file size muse be greater or equal than 1024 o");
                 }
+                StrCommand.AppendFormat("{0} {1} ", _optChunkSize.LongOpt, retArgs.ChunkSize);
 
             }
             else
@@ -152,12 +174,23 @@ namespace TwoStageFileTransfer.business
                 retArgs.ChunkSize = -1;
             }
 
-            retArgs.IsDoCompress = HasOption(_optDoCompress, arg);
+            if (HasOption(_optDoCompress, arg))
+            {
+                retArgs.IsDoCompress = HasOption(_optDoCompress, arg);
+                StrCommand.AppendFormat("{0} {1} ", _optDoCompress.LongOpt, retArgs.IsDoCompress);
+            }
 
+            if (HasOption(_optCanOverwrite, arg))
+            {
+                retArgs.CanOverwrite = HasOption(_optCanOverwrite, arg);
+                StrCommand.AppendFormat("{0} {1} ", _optCanOverwrite.LongOpt, retArgs.CanOverwrite);
+            }
 
             return retArgs;
 
 
         }
+
+        
     }
 }

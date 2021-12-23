@@ -18,6 +18,8 @@ namespace TwoStageFileTransfer.business
 
         public int BufferSize { get; internal set; }
 
+        public bool CanOverwrite { get;internal set; }
+
 
         public static string CalculculateSourceSha1(FileInfo file, string compSha1 = null)
         {
@@ -32,7 +34,7 @@ namespace TwoStageFileTransfer.business
 
             if (compSha1 != null)
             {
-                LogUtils.WriteConsole(string.Format("SHA1 match: {0}", sha1.ToUpper().Equals(compSha1?.ToUpper()) ? "OK" : "KO"), _log);
+                LogUtils.I(_log, string.Format("SHA1 match: {0}", sha1.ToUpper().Equals(compSha1?.ToUpper()) ? "OK" : "KO"));
             }
 
             TimeSpan duration = DateTime.Now - start;

@@ -9,41 +9,22 @@ namespace TwoStageFileTransfer.dto
 {
     class AppFile
     {
-        private readonly FileInfo _normalFile;
+     
+        public FileInfo File { get; }
 
-        private readonly FileInfo _tempFile;
+        public FileInfo TempFile { get; }
 
-        public bool IsNormalFile { get; set; }
-
-        public FileInfo File => IsNormalFile ? _normalFile : _tempFile;
-
-        public string FileName => IsNormalFile ? _normalFile.Name : _tempFile.Name;
-
-        public string FullName => IsNormalFile ? _normalFile.FullName : _tempFile.FullName;
-
-        public String TempName { get; private set; }
 
         public AppFile(string directory, string filename)
         {
-            IsNormalFile = false;
-            _normalFile = new FileInfo(Path.Combine(directory, filename));
-            _tempFile = new FileInfo(Path.Combine(directory, "~" + filename));
+            File = new FileInfo(Path.Combine(directory, filename));
+            TempFile = new FileInfo(Path.Combine(directory, "~" + filename));
         }
-
-        public FileInfo GetNormalFileInfo()
-        {
-            return _normalFile;
-        }
-
-        public FileInfo GetTempFileInfo()
-        {
-            return _tempFile;
-        }
-
+        
 
         public void MoveToNormal()
         {
-            _tempFile.MoveTo(_normalFile.FullName);
+            TempFile.MoveTo(File.FullName);
         }
     }
 }

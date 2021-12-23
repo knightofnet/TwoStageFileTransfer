@@ -12,5 +12,7 @@ namespace TwoStageFileTransfer.constant
 
         public const string MODE_IN = "IN";
         public const string MODE_OUT = "OUT";
+
+        public static readonly char[] TRIM_PATH_CHARS = new[] { ' ', '"' };
     }
 }

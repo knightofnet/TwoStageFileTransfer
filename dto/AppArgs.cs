@@ -7,7 +7,7 @@ using TwoStageFileTransfer.constant;
 
 namespace TwoStageFileTransfer.dto
 {
-    class AppArgs
+    public class AppArgs
     {
         public string Direction { get; internal set; }
         public string Source { get; internal set; }
@@ -17,11 +17,25 @@ namespace TwoStageFileTransfer.dto
 
         public bool IsDoCompress { get; internal set; }
         public long ChunkSize { get; internal set; }
+        public bool CanOverwrite { get; set; }
+        public SourceRuns SourceRun { get; set; }
 
         public AppArgs()
         {
             BufferSize = AppCst.BufferSize;
             
         }
+
+        public bool IsRunByCmd()
+        {
+            return SourceRun == SourceRuns.CommandPrompt;
+        }
+
+        public bool IsRunByExplorer()
+        {
+            return SourceRun == SourceRuns.Explorer; ;
+        }
+
+        
     }
 }

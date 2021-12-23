@@ -1,45 +1,134 @@
 ﻿using AryxDevLibrary.utils.logger;
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Windows.Forms;
+using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.cliParser;
 using TwoStageFileTransfer.business;
+using TwoStageFileTransfer.business.moderuns;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using TwoStageFileTransfer.constant;
+using static TwoStageFileTransfer.utils.LogUtils;
+using FileUtils = TwoStageFileTransfer.utils.FileUtils;
+using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
 
 namespace TwoStageFileTransfer
 {
     class Program
     {
-        private static Logger _log = _log = new Logger("log.log", Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
+        private static Logger _log = null;
 
+        private static readonly string AppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwoStageFileTransfer");
+
+        private static AppArgs _appArgs;
+
+        private static AbstractModeRun _modeRun;
+
+        [STAThread]
         static void Main(string[] args)
         {
-            AppHeader();
-
-            AppArgs appArgs;
-            AppArgsParser argsParser = new AppArgsParser();
             try
             {
-                appArgs = argsParser.ParseDirect(args);
+                if (!Directory.Exists(AppDataDir))
+                {
+                    Directory.CreateDirectory(AppDataDir);
+                }
+
+                _log = new Logger(Path.Combine(AppDataDir, "log.log"), Logger.LogLvl.NONE, Logger.LogLvl.DEBUG, "1 Mo");
+
+                AppHeader();
+
+                AppArgsParser argsParser = new AppArgsParser();
+                _appArgs = GetAppArgs(args, argsParser);
+
+
+                InitLogAndAskForParams(_appArgs);
+
+                I(_log, $"Source: {_appArgs.Source}");
+                I(_log, $"Target: {_appArgs.Target}");
+
+                Console.WriteLine();
+                DoWork(_appArgs, argsParser);
+            }
+            catch (Exception ex)
+            {
+                ExceptionHandlingUtils.LogAndHideException(ex, "MainError");
+                AppUtils.Exit(EnumExitCodes.KO);
+            }
+
+            AppUtils.Exit(EnumExitCodes.OK);
+        }
+
+        private static AppArgs GetAppArgs(String[] args, AppArgsParser argsParser)
+        {
+            string sourceProcessName = ProcessUtils.ParentProcessUtilities.GetParentProcess().ProcessName.ToLower();
+
+            AppArgs appArgs = null;
+
+            try
+            {
+                if (args.Length == 1 && args[0].ToLower().EndsWith(".tsft"))
+                {
+                    appArgs = new AppArgs() { Direction = AppCst.MODE_OUT, Source = args[0] };
+                    D(_log, "Run with tsft file : Mode OUT");
+                }
+                else
+                {
+                    appArgs = argsParser.ParseDirect(args);
+                    D(_log, "Run with parameters");
+                    I(_log, $"Args input: {argsParser.StrCommand}");
+
+                }
             }
             catch (CliParsingException e)
             {
-                LogUtils.WriteConsole(e.Message, _log);
-                argsParser.ShowSyntax();
+                if (args.Any())
+                {
+                    I(_log, e.Message);
+                }
 
-                Environment.Exit(1);
-                return;
+                argsParser.ShowSyntax();
+                if (appArgs == null && "explorer".Equals(sourceProcessName))
+                {
+                    Console.Read();
+                }
+
+                AppUtils.Exit(EnumExitCodes.KO_PARAMS_PARSING);
+                return null;
             }
 
-            InitLogAndAskForParams(appArgs);
+            appArgs.SourceRun = SourceRuns.Undetermined;
+            switch (sourceProcessName)
+            {
+                case "cmd":
+                    appArgs.SourceRun = SourceRuns.CommandPrompt;
+                    _modeRun = new CmdRun();
+                    break;
+                case "explorer":
+                    appArgs.SourceRun = SourceRuns.Explorer;
+                    _modeRun = new ExplorerRun();
+                    break;
+            }
 
-            LogUtils.WriteConsole(string.Format("Source: {0}", appArgs.Source), _log);
-            LogUtils.WriteConsole(string.Format("Target: {0}", appArgs.Target), _log);
-            Console.WriteLine();
-            DoWork(appArgs, argsParser);
+            return appArgs;
 
+        }
+
+        private static void InitLogAndAskForParams(AppArgs appArgs)
+        {
+            _modeRun.InitLogAndAskForParams(appArgs);
+            switch (appArgs.Direction)
+            {
+                case AppCst.MODE_IN:
+                    _log = new Logger(Path.Combine(AppDataDir, "log-IN.log"), Logger.LogLvl.NONE, Logger.LogLvl.DEBUG, "1 Mo");
+                    break;
+                case AppCst.MODE_OUT:
+                    _log = new Logger(Path.Combine(AppDataDir, "log-OUT.log"), Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
+                    break;
+            }
         }
 
         private static void DoWork(AppArgs appArgs, AppArgsParser argsParser)
@@ -50,16 +139,17 @@ namespace TwoStageFileTransfer
                 {
                     case AppCst.MODE_IN:
                         {
-                            LogUtils.WriteConsole("Mode IN : transfer file from source to temp and shared folder", _log);
+                            I(_log, "First stage: transfer file from source to temp-shared folder");
 
                             long maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
-                            LogUtils.WriteConsole(string.Format("Max size that can be used: {0}", AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)), _log);
+                            I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
 
                             InToOutWork w = new InToOutWork(maxTransferLenght, appArgs.ChunkSize, appArgs.IsDoCompress)
                             {
                                 Source = new FileInfo(appArgs.Source),
                                 Target = appArgs.Target,
-                                BufferSize = appArgs.BufferSize
+                                BufferSize = appArgs.BufferSize,
+                                CanOverwrite = appArgs.CanOverwrite
                             };
 
                             w.DoTransfert();
@@ -67,13 +157,14 @@ namespace TwoStageFileTransfer
                         }
                     case AppCst.MODE_OUT:
                         {
-                            LogUtils.WriteConsole("Mode OUT : recompose target file from part files from shared folder", _log);
+                            I(_log, "Second stage: recompose target file from part files from shared folder");
 
                             OutToFileWork o = new OutToFileWork
                             {
                                 Source = new FileInfo(appArgs.Source),
                                 Target = appArgs.Target,
-                                BufferSize = appArgs.BufferSize
+                                BufferSize = appArgs.BufferSize,
+                                CanOverwrite = appArgs.CanOverwrite
                             };
 
                             o.DoTransfert();
@@ -86,8 +177,14 @@ namespace TwoStageFileTransfer
             }
             catch (Exception e)
             {
-                LogUtils.WriteConsole("Error : " + e.Message, _log);
-                _log.Error(e.StackTrace);
+                E(_log, "", isWriteLog: false);
+                E(_log, "Error: " + e.Message);
+                E(_log, e.StackTrace, false);
+
+                if (appArgs.IsRunByExplorer())
+                {
+                    Console.Read();
+                }
 
             }
             finally
@@ -100,68 +197,16 @@ namespace TwoStageFileTransfer
         {
             Console.WriteLine();
             Console.WriteLine("-------------------------------------------------------------------------------");
+# if DEBUG
+            Console.WriteLine("   TWO-STAGE FILE TRANSFER  ::  {0} - DEBUG", Assembly.GetExecutingAssembly().GetName().Version);
+#else
             Console.WriteLine("   TWO-STAGE FILE TRANSFER  ::  {0}", Assembly.GetExecutingAssembly().GetName().Version);
+#endif
             Console.WriteLine("-------------------------------------------------------------------------------");
             Console.WriteLine();
         }
 
-        private static void InitLogAndAskForParams(AppArgs appArgs)
-        {
-            if (appArgs.Direction == AppCst.MODE_IN)
-            {
-                _log = new Logger("log-IN.log", Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
 
-                if (appArgs.Source == null)
-                {
-                    Console.WriteLine("Enter source file to transfer: ");
-                    string rawSource = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    while (!File.Exists(rawSource))
-                    {
-                        Console.WriteLine("The file '{0}' doesnt exist.", rawSource);
-                        rawSource = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    }
-                    appArgs.Source = rawSource;
-                }
 
-                if (appArgs.Target == null)
-                {
-                    Console.WriteLine("Enter target file to transfer the part files: ");
-                    string rawTarget = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    while (!Directory.Exists(rawTarget))
-                    {
-                        Console.WriteLine("The target '{0}' doesnt exist.", rawTarget);
-                        rawTarget = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    }
-                    appArgs.Target = rawTarget;
-                }
-            }
-            else if (appArgs.Direction == AppCst.MODE_OUT)
-            {
-                _log = new Logger("log-OUT.log", Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
-
-                if (appArgs.Source == null)
-                {
-                    Console.WriteLine("Enter source folder to transfer for, or path to tstr file: ");
-                    string rawSource = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    while (!File.Exists(rawSource) && !Directory.Exists(rawSource))
-                    {
-                        Console.WriteLine("The source '{0}' doesnt exist.", rawSource);
-                        rawSource = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    }
-                }
-
-                if (appArgs.Target == null)
-                {
-                    Console.WriteLine("Enter target file to recompose part file: ");
-                    string rawTarget = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    while (!File.Exists(rawTarget))
-                    {
-                        Console.WriteLine("The target '{0}' doesnt exist.", rawTarget);
-                        rawTarget = Console.ReadLine()?.Trim(new[] { ' ', '"' });
-                    }
-                }
-            }
-
-        }
     }
 }
