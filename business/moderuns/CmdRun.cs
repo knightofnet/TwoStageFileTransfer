@@ -38,7 +38,7 @@ namespace TwoStageFileTransfer.business.moderuns
 
                 if (appArgs.Target == null)
                 {
-                    appArgs.Target = FileUtils.ConsoleGetValidFilepath("Enter target file to recompose part file: ");
+                    appArgs.Target = FileUtils.ConsoleGetValidDirectorypath("Enter target file to recompose part file: ");
                 }
             }
         }

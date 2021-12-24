@@ -39,7 +39,7 @@ namespace TwoStageFileTransfer.business.moderuns
 
                 if (appArgs.Target == null)
                 {
-                   appArgs.Target = FileUtils.WinformGetValidSaveFilepath("Select filepath to transfer..."); ;
+                   appArgs.Target = FileUtils.WinformGetValidDirectorypath("Select filepath to transfer..."); ;
                     
                 }
             }
