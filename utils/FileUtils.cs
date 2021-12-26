@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Windows.Forms;
+using TwoStageFileTransfer.business;
 using TwoStageFileTransfer.constant;
 
 namespace TwoStageFileTransfer.utils
@@ -198,6 +199,28 @@ namespace TwoStageFileTransfer.utils
             }
 
             return null;
+        }
+
+        public static string CalculculateSourceSha1(FileInfo file, string compSha1 = null)
+        {
+            Console.Write("Calculate SHA1... ", _log);
+            _log.Info("Calculate SHA1");
+            DateTime start = DateTime.Now;
+
+            string sha1 = FileUtils.GetSha1Hash(file);
+            Console.WriteLine("Done.");
+
+
+
+            if (compSha1 != null)
+            {
+                LogUtils.I(_log, string.Format("SHA1 match: {0}", sha1.ToUpper().Equals(compSha1?.ToUpper()) ? "OK" : "KO"));
+            }
+
+            TimeSpan duration = DateTime.Now - start;
+            _log.Info("Calculate Sha1 > Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
+
+            return sha1;
         }
     }
 }

@@ -1,44 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
-namespace TwoStageFileTransfer.business
+namespace TwoStageFileTransfer.business.transferworkers.@in
 {
-    class InToOutWork : AbstractWork
+    class InToOutWork : AbstractInWork
     {
 
-        private readonly long _maxTransferFile;
-        private readonly long _chunkSize;
-        private readonly bool _isDoCompressBefore;
+
+        //private readonly long _maxTransferFile;
+        //private readonly long _chunkSize;
+
         private long _totalBytesRead = 0;
         private byte[] _buffer;
 
-        
 
-        public InToOutWork(long maxTransfertLength, long chunkSize, bool isDoCompressBefore = false)
+
+        public InToOutWork(InWorkOptions inWorkOptions) : base(inWorkOptions)
         {
-            _maxTransferFile = maxTransfertLength;
-            _chunkSize = chunkSize;
-            _isDoCompressBefore = isDoCompressBefore;
+
+
         }
+
         public void DoTransfert()
         {
-            long partFileMaxLenght = _chunkSize;
+            long partFileMaxLenght = InWorkOptions.PartFileSize;
             if (partFileMaxLenght == -1)
             {
-                partFileMaxLenght = Math.Min(_maxTransferFile / 10, 50 * 1024 * 1024);
+                partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
             }
 
-            partFileMaxLenght = new[] { _maxTransferFile, partFileMaxLenght, Source.Length }.Min();
+            partFileMaxLenght = new[]
+            {
+                InWorkOptions.MaxSizeUsedOnShared, partFileMaxLenght,InWorkOptions.Source.Length
+            }.Min();
 
             LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
 
@@ -46,24 +47,24 @@ namespace TwoStageFileTransfer.business
 
             HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
 
-            WarnForCompressedTargetDir(Target);
-            TestFilesNotAlreadyExist(Source, Target, partFileMaxLenght, !CanOverwrite);
+            WarnForCompressedTargetDir(InWorkOptions.Target);
+            TestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
 
-            string sha1 = CalculculateSourceSha1(Source);
+            string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
 
 
             Console.Write("Creating part files... ");
             DateTime mainStart = DateTime.Now;
             using (ProgressBar pbar = new ProgressBar())
             {
-                using (FileStream fs = new FileStream(Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan))
+                using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
                 {
-                    _buffer = new byte[BufferSize];
+                    _buffer = new byte[InWorkOptions.BufferSize];
 
                     while (_totalBytesRead < fs.Length)
                     {
 
-                        AppFile fileOutPath = new AppFile(Target, FileUtils.GetFileName(Source.Name, fs.Length, fileCreatedIndex));
+                        AppFile fileOutPath = new AppFile(InWorkOptions.Target, FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex));
 
                         DateTime localStart = DateTime.Now;
 
@@ -74,14 +75,14 @@ namespace TwoStageFileTransfer.business
                         listFiles.Add(fileOutPath.File);
                         _log.Debug("> OK");
 
-                        if (_totalBytesRead + BufferSize > _maxTransferFile)
+                        if (_totalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
                         {
                             WaitForFreeSpace(listFiles);
                         }
 
                         if (fileCreatedIndex == 0)
                         {
-                            WriteTransferExchangeFile(Source.Name, Source.Length, sha1);
+                            WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length, sha1);
                         }
                         fileCreatedIndex++;
                     }
@@ -100,9 +101,9 @@ namespace TwoStageFileTransfer.business
             try
             {
 
-                using (FileStream fo = new FileStream(fileOutPath.TempFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None, BufferSize, false))
+                using (FileStream fo = new FileStream(fileOutPath.TempFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None, InWorkOptions.BufferSize, false))
                 {
-                    fo.SetLength(Math.Min(chunk, Source.Length - _totalBytesRead));
+                    fo.SetLength(Math.Min(chunk, InWorkOptions.Source.Length - _totalBytesRead));
 
                     string msg = "Creating part file " + fileOutPath.File.Name;
                     Console.Title = $"TSFT - In - {msg}";
@@ -118,8 +119,8 @@ namespace TwoStageFileTransfer.business
 
                         fo.Write(_buffer, 0, bytesRead);
 
-                        if (localBytesRead + BufferSize > chunk ||
-                            localBytesRead + BufferSize > _maxTransferFile)
+                        if (localBytesRead + InWorkOptions.BufferSize > chunk ||
+                            localBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
                         {
                             break;
                         }
@@ -128,7 +129,7 @@ namespace TwoStageFileTransfer.business
                 }
 
                 pbar.Report((double)_totalBytesRead / fs.Length, GetTransferSpeed(localBytesRead, localStart));
-                
+
                 fileOutPath.MoveToNormal();
             }
             catch (Exception ex)
@@ -148,14 +149,14 @@ namespace TwoStageFileTransfer.business
             long nbFiles = (source.Length / chunkSize) + (source.Length % chunkSize == 0 ? 0 : 1);
             for (long i = 0; i < nbFiles; i++)
             {
-                String tmpFile = Path.Combine(target, "~" + FileUtils.GetFileName(Source.Name, source.Length, i));
+                String tmpFile = Path.Combine(target, "~" + FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i));
                 if (File.Exists(tmpFile))
                 {
                     _log.Debug("File {0} already exists.", tmpFile);
                     File.Delete(tmpFile);
                 }
 
-                String realPartFile = Path.Combine(target, FileUtils.GetFileName(Source.Name, source.Length, i));
+                String realPartFile = Path.Combine(target, FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i));
                 if (File.Exists(realPartFile))
                 {
                     if (exceptionIfExists)
@@ -221,20 +222,20 @@ namespace TwoStageFileTransfer.business
                 .Sum(f => f.Length);
 
             TimeSpan nowBeforeWait = DateTime.Now.TimeOfDay;
-            while (filesSize + BufferSize > _maxTransferFile)
+            while (filesSize + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
             {
                 HashSet<FileInfo> setFilesExist = new HashSet<FileInfo>(listFiles.Where(r =>
                 {
                     r.Refresh();
                     return r.Exists;
                 }).ToList());
-                    
+
                 filesSize = setFilesExist.Sum(f => f.Length);
 
-                Console.Title = $"TSFT - In - {"Waiting for OUT mode to work and freeing disk space..."}";
+                Console.Title = $"TSFT - In - Waiting for OUT mode to work and freeing disk space...";
                 if (mustWriteLogStatus)
                 {
-                    _log.Info("Waiting for OUT mode to work and freeing disk space : {0} + {1} > {2}", filesSize, BufferSize, _maxTransferFile);
+                    _log.Info("Waiting for OUT mode to work and freeing disk space : {0} + {1} > {2}", filesSize, InWorkOptions.BufferSize, InWorkOptions.MaxSizeUsedOnShared);
                     mustWriteLogStatus = false;
                 }
 
@@ -257,7 +258,7 @@ namespace TwoStageFileTransfer.business
             s.AppendLine(originalFileSize.ToString());
             s.AppendLine(sha1);
 
-            String transfertFile = Path.Combine(Target, Source.Name + ".tsft");
+            String transfertFile = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
             File.WriteAllText(transfertFile, s.ToString(), Encoding.UTF8);
         }
     }

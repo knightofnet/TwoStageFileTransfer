@@ -8,6 +8,8 @@ using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.cliParser;
 using TwoStageFileTransfer.business;
 using TwoStageFileTransfer.business.moderuns;
+using TwoStageFileTransfer.business.transferworkers.@in;
+using TwoStageFileTransfer.business.transferworkers.@out;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using TwoStageFileTransfer.constant;
@@ -149,13 +151,17 @@ namespace TwoStageFileTransfer
                             long maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
                             I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
 
-                            InToOutWork w = new InToOutWork(maxTransferLenght, appArgs.ChunkSize, appArgs.IsDoCompress)
+                            InWorkOptions jobOptions = new InWorkOptions()
                             {
+                                MaxSizeUsedOnShared = maxTransferLenght,
+                                PartFileSize = appArgs.ChunkSize,
                                 Source = new FileInfo(appArgs.Source),
                                 Target = appArgs.Target,
                                 BufferSize = appArgs.BufferSize,
                                 CanOverwrite = appArgs.CanOverwrite
                             };
+
+                            InToOutWork w = new InToOutWork(jobOptions);
 
                             w.DoTransfert();
                             break;
@@ -164,13 +170,15 @@ namespace TwoStageFileTransfer
                         {
                             I(_log, "Second stage: recompose target file from part files from shared folder");
 
-                            OutToFileWork o = new OutToFileWork
+                            OutWorkOptions jobOptions = new OutWorkOptions()
                             {
                                 Source = new FileInfo(appArgs.Source),
                                 Target = appArgs.Target,
                                 BufferSize = appArgs.BufferSize,
                                 CanOverwrite = appArgs.CanOverwrite
                             };
+
+                            OutToFileWork o = new OutToFileWork(jobOptions);
 
                             o.DoTransfert();
                             break;

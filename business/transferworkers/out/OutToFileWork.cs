@@ -4,26 +4,32 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using TwoStageFileTransfer.constant;
+using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 
-namespace TwoStageFileTransfer.business
+namespace TwoStageFileTransfer.business.transferworkers.@out
 {
-    class OutToFileWork : AbstractWork
+    class OutToFileWork : AbstractOutWork
     {
         private FileInfo _firstFile = null;
+
+        public OutToFileWork(OutWorkOptions outToFileWork) : base(outToFileWork)
+        {
+
+        }
 
         internal void DoTransfert()
         {
 
-            if (Source == null)
+            if (Options.Source == null)
             {
                 Console.WriteLine("Error : no first file provided");
                 return;
             }
-            if (!Source.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
+            if (!Options.Source.Exists && !AryxDevLibrary.utils.FileUtils.IsADirectory(Options.Source.FullName))
             {
                 // ERROR
-                Console.WriteLine("Error : '{0}' doesnt exist", Source.FullName);
+                Console.WriteLine("Error : '{0}' doesnt exist", Options.Source.FullName);
                 return;
             }
 
@@ -35,23 +41,23 @@ namespace TwoStageFileTransfer.business
 
             string sha1FinalFile=null;
 
-            if (Source.Name.ToUpper().EndsWith(".TSFT") && !AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
+            if (Options.Source.Name.ToUpper().EndsWith(".TSFT") && !AryxDevLibrary.utils.FileUtils.IsADirectory(Options.Source.FullName))
             {
-                String[] configFile = File.ReadAllLines(Source.FullName, Encoding.UTF8);
+                String[] configFile = File.ReadAllLines(Options.Source.FullName, Encoding.UTF8);
 
                 totalBytesToRead = long.Parse(configFile[1].Trim());
                 finalFileName = configFile[0].Trim();
                 sha1FinalFile = configFile[2].Trim();
 
-                _firstFile = new FileInfo(Path.Combine(Source.DirectoryName, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0)));
+                _firstFile = new FileInfo(Path.Combine(Options.Source.DirectoryName, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0)));
 
             }
             else
             {
-                _firstFile = Source;
-                if (AryxDevLibrary.utils.FileUtils.IsADirectory(Source.FullName))
+                _firstFile = Options.Source;
+                if (AryxDevLibrary.utils.FileUtils.IsADirectory(Options.Source.FullName))
                 {
-                    _firstFile = FindFirstFileSourceDir(Source);
+                    _firstFile = FindFirstFileSourceDir(Options.Source);
                 }
 
                 Match m = AppCst.FilePatternRegex.Match(_firstFile.Name);
@@ -68,8 +74,8 @@ namespace TwoStageFileTransfer.business
 
             }
 
-            FileInfo targetFile = new FileInfo(Path.Combine(Target, "~" + finalFileName));
-            FileInfo rTargetFile = new FileInfo(Path.Combine(Target, finalFileName));
+            FileInfo targetFile = new FileInfo(Path.Combine(Options.Target, "~" + finalFileName));
+            FileInfo rTargetFile = new FileInfo(Path.Combine(Options.Target, finalFileName));
             if (rTargetFile.Exists)
             {
                 _log.Warn("{0} already exists : delete");
@@ -107,7 +113,7 @@ namespace TwoStageFileTransfer.business
                     Console.Title = string.Format("TSFT - Out - {0}", msg);
                     _log.Debug(msg);
 
-                    byte[] buffer = new byte[BufferSize];
+                    byte[] buffer = new byte[Options.BufferSize];
                     using (FileStream fr = new FileStream(currentFileToRead.FullName, FileMode.Open))
                     {
 
@@ -127,7 +133,7 @@ namespace TwoStageFileTransfer.business
                     currentFileToRead.Delete();
                     _log.Debug("> File part deleted");
 
-                    currentFileToRead = new FileInfo(Path.Combine(Source.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
+                    currentFileToRead = new FileInfo(Path.Combine(Options.Source.Directory.FullName, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
 
                 }
 
@@ -144,7 +150,7 @@ namespace TwoStageFileTransfer.business
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
-            CalculculateSourceSha1(targetFile, sha1FinalFile);
+            FileUtils.CalculculateSourceSha1(targetFile, sha1FinalFile);
 
             return;
         }
