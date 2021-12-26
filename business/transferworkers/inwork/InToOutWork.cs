@@ -8,7 +8,7 @@ using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
-namespace TwoStageFileTransfer.business.transferworkers.@in
+namespace TwoStageFileTransfer.business.transferworkers.inwork
 {
     class InToOutWork : AbstractInWork
     {

@@ -7,7 +7,7 @@ using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 
-namespace TwoStageFileTransfer.business.transferworkers.@out
+namespace TwoStageFileTransfer.business.transferworkers.outwork
 {
     class OutToFileWork : AbstractOutWork
     {

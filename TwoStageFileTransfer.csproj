@@ -70,11 +70,11 @@
     <Compile Include="business\AppLogger.cs" />
     <Compile Include="business\transferworkers\AbstractInWork.cs" />
     <Compile Include="business\transferworkers\AbstractOutWork.cs" />
-    <Compile Include="business\transferworkers\in\InToOutWork.cs" />
+    <Compile Include="business\transferworkers\inwork\InToOutWork.cs" />
     <Compile Include="business\moderuns\AbstractModeRun.cs" />
     <Compile Include="business\moderuns\CmdRun.cs" />
     <Compile Include="business\moderuns\ExplorerRun.cs" />
-    <Compile Include="business\transferworkers\out\OutToFileWork.cs" />
+    <Compile Include="business\transferworkers\outwork\OutToFileWork.cs" />
     <Compile Include="constant\AppCst.cs" />
     <Compile Include="constant\EnumExitCodes.cs" />
     <Compile Include="constant\SourceRuns.cs" />
