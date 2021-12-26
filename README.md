@@ -1,4 +1,4 @@
-# TwoStageFileTransfer
+# Two-stage File Transfer
  
 <div id="top"></div>
 <!--
@@ -123,7 +123,7 @@ and valid with return.
 
 ### Installation
 
-1. Download latest release [here]().
+1. Download latest release [here](https://github.com/knightofnet/TwoStageFileTransfer/releases).
 2. Extract the archive in a folder.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
