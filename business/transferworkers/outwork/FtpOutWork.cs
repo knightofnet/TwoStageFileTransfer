@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Xml;
-using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
@@ -19,12 +13,12 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 {
     class FtpOutWork : AbstractOutWork
     {
-        private long _totalBytesRead = 0;
+        private long _totalBytesRead ;
         private byte[] _buffer;
 
         private  NetworkCredential _ftpCredentials;
 
-        private AppFileFtp _firstFile = null;
+        private AppFileFtp _firstFile ;
 
         public FtpOutWork(NetworkCredential networkCredential, OutWorkOptions outWorkOptions) : base(outWorkOptions)
         {
@@ -36,12 +30,11 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
         {
 
             long totalBytesRead = 0;
-            long totalBytesToRead = 0;
-            String finalFileName = null;
+            long totalBytesToRead;
             int i = 1;
+            string finalFileName;
 
-            string sha1FinalFile = null;
-
+            string sha1FinalFile;
             if (Options.Tsft != null)
             {
                 totalBytesToRead = Options.Tsft.FileLenght;
@@ -60,7 +53,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     throw new Exception($"Unable to established a connexion to ${serverHost.AbsoluteUri}");
                 }
 
-                _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0), _ftpCredentials );
+                _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0), _ftpCredentials);
             }
             else
             {
@@ -68,7 +61,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             }
 
-            
+
 
             FileInfo targetFile = new FileInfo(Path.Combine(Options.Target, "~" + finalFileName));
             FileInfo rTargetFile = new FileInfo(Path.Combine(Options.Target, finalFileName));
@@ -125,7 +118,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                         Array.Clear(buffer, 0, buffer.Length);
                         int bytesRead;
 
-                        while ((bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
+                        while (fr != null && (bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             totalBytesRead += bytesRead;
                             fo.Write(buffer, 0, bytesRead);
@@ -157,7 +150,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             FileUtils.CalculculateSourceSha1(targetFile, sha1FinalFile);
 
-            return;
+          
         }
 
         private static FileInfo FindFirstFileSourceDir(FileInfo source)

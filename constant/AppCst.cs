@@ -10,9 +10,8 @@ namespace TwoStageFileTransfer.constant
         public static readonly Regex FilePatternRegex = new Regex(@"(?'name'.+?\..+?)\.(?'size'\d+?)\.part(?'part'\d+)", RegexOptions.Compiled);
         public static readonly Regex FirstFilePatternRegex = new Regex(@"(?'name'.+?\..+?)\.(?'size'\d+?)\.part0", RegexOptions.Compiled);
 
-        public const string MODE_IN = "IN";
-        public const string MODE_OUT = "OUT";
 
-        public static readonly char[] TRIM_PATH_CHARS = new[] { ' ', '"' };
+
+        public static readonly char[] TrimPathChars = new[] { ' ', '"' };
     }
 }

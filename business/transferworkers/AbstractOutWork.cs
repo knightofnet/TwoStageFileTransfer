@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TwoStageFileTransfer.dto;
+﻿using TwoStageFileTransfer.dto;
 
 namespace TwoStageFileTransfer.business.transferworkers
 {
     internal abstract class AbstractOutWork : AbstractWork
     {
-        public OutWorkOptions Options { get; private set; }
+        public OutWorkOptions Options { get; }
 
-        public AbstractOutWork(OutWorkOptions outWorkOptions)
+        protected AbstractOutWork(OutWorkOptions outWorkOptions)
         {
             Options = outWorkOptions;
         }

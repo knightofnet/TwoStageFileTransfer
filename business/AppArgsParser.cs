@@ -1,13 +1,9 @@
 ﻿using AryxDevLibrary.utils.cliParser;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
@@ -17,7 +13,7 @@ namespace TwoStageFileTransfer.business
     class AppArgsParser : CliParser<AppArgs>
     {
 
-        private static readonly Option _optSens = new Option()
+        private static readonly Option OptSens = new Option()
         {
             ShortOpt = "d",
             LongOpt = "direction",
@@ -28,7 +24,7 @@ namespace TwoStageFileTransfer.business
 
         };
 
-        private static readonly Option _optSource = new Option()
+        private static readonly Option OptSource = new Option()
         {
             ShortOpt = "s",
             LongOpt = "source",
@@ -38,7 +34,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optTarget = new Option()
+        private static readonly Option OptTarget = new Option()
         {
             ShortOpt = "t",
             LongOpt = "target",
@@ -48,7 +44,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optChunkSize = new Option()
+        private static readonly Option OptChunkSize = new Option()
         {
             ShortOpt = "c",
             LongOpt = "chunk",
@@ -58,7 +54,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optDoCompress = new Option()
+        private static readonly Option OptDoCompress = new Option()
         {
             ShortOpt = "dc",
             LongOpt = "compress-before",
@@ -68,7 +64,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optBufferSize = new Option()
+        private static readonly Option OptBufferSize = new Option()
         {
             ShortOpt = "b",
             LongOpt = "buffer-size",
@@ -78,7 +74,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optCanOverwrite = new Option()
+        private static readonly Option OptCanOverwrite = new Option()
         {
             ShortOpt = "w",
             LongOpt = "overwrite",
@@ -88,7 +84,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optProtocolType = new Option()
+        private static readonly Option OptProtocolType = new Option()
         {
             ShortOpt = "p",
             LongOpt = "protocol",
@@ -99,7 +95,7 @@ namespace TwoStageFileTransfer.business
         };
 
 
-        private static readonly Option _optFtpUser = new Option()
+        private static readonly Option OptFtpUser = new Option()
         {
             ShortOpt = "pu",
             LongOpt = "protocol-username",
@@ -109,7 +105,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option _optFtpPassword = new Option()
+        private static readonly Option OptFtpPassword = new Option()
         {
             ShortOpt = "pp",
             LongOpt = "protocol-password",
@@ -120,7 +116,7 @@ namespace TwoStageFileTransfer.business
         };
 
 
-        private static readonly Option _optReprise = new Option()
+        private static readonly Option OptReprise = new Option()
         {
             ShortOpt = "r",
             LongOpt = "resume-part",
@@ -133,20 +129,20 @@ namespace TwoStageFileTransfer.business
 
         public AppArgsParser()
         {
-            AddOption(_optSens);
-            AddOption(_optSource);
-            AddOption(_optTarget);
+            AddOption(OptSens);
+            AddOption(OptSource);
+            AddOption(OptTarget);
             //AddOption(_optDoCompress);
-            AddOption(_optBufferSize);
-            AddOption(_optChunkSize);
-            AddOption(_optCanOverwrite);
+            AddOption(OptBufferSize);
+            AddOption(OptChunkSize);
+            AddOption(OptCanOverwrite);
 
-            AddOption(_optReprise);
+            AddOption(OptReprise);
 
 
-            AddOption(_optProtocolType);
-            AddOption(_optFtpUser);
-            AddOption(_optFtpPassword);
+            AddOption(OptProtocolType);
+            AddOption(OptFtpUser);
+            AddOption(OptFtpPassword);
 
         }
 
@@ -163,48 +159,48 @@ namespace TwoStageFileTransfer.business
             StrCommand = new StringBuilder(Path.GetFileName(Assembly.GetExecutingAssembly().Location) + " ");
 
             // Direction
-            string rawSource = GetSingleOptionValue(_optSens, arg, "NONE");
+            string rawSource = GetSingleOptionValue(OptSens, arg, "NONE");
             retArgs.Direction = (DirectionTrts)Enum.Parse(typeof(DirectionTrts), rawSource, true);
             if (retArgs.Direction != DirectionTrts.IN && retArgs.Direction != DirectionTrts.OUT)
             {
                 throw new CliParsingException("Direction must be 'in' or 'out'");
             }
-            StrCommand.AppendFormat("--{0} {1} ", _optSens.LongOpt, retArgs.Direction);
+            StrCommand.AppendFormat("--{0} {1} ", OptSens.LongOpt, retArgs.Direction);
 
 
             // TransferType
             string rawTransfertType =
-                GetSingleOptionValue(_optProtocolType, arg, TransferTypes.WindowsFolder.ToString());
+                GetSingleOptionValue(OptProtocolType, arg, TransferTypes.WindowsFolder.ToString());
             retArgs.TransferType = (TransferTypes)Enum.Parse(typeof(TransferTypes), rawTransfertType, true);
-            if (HasOption(_optProtocolType, arg))
+            if (HasOption(OptProtocolType, arg))
             {
-                StrCommand.AppendFormat("--{0} {1} ", _optProtocolType.LongOpt, retArgs.TransferType);
+                StrCommand.AppendFormat("--{0} {1} ", OptProtocolType.LongOpt, retArgs.TransferType);
             }
 
 
             // Username and password for FTP
             if (retArgs.TransferType == TransferTypes.FTP &&
-                (HasOption(_optFtpUser, arg) || HasOption(_optFtpPassword, arg))
+                (HasOption(OptFtpUser, arg) || HasOption(OptFtpPassword, arg))
             )
             {
-                if (HasOption(_optFtpUser, arg))
+                if (HasOption(OptFtpUser, arg))
                 {
-                    retArgs.FtpUser = GetSingleOptionValue(_optFtpUser, arg);
-                    StrCommand.AppendFormat("--{0} {1} ", _optFtpUser.LongOpt, retArgs.FtpUser);
+                    retArgs.FtpUser = GetSingleOptionValue(OptFtpUser, arg);
+                    StrCommand.AppendFormat("--{0} {1} ", OptFtpUser.LongOpt, retArgs.FtpUser);
                 }
 
-                if (HasOption(_optFtpPassword, arg))
+                if (HasOption(OptFtpPassword, arg))
                 {
-                    retArgs.FtpPassword = GetSingleOptionValue(_optFtpPassword, arg);
-                    StrCommand.AppendFormat("--{0} {1} ", _optFtpPassword.LongOpt, "***");
+                    retArgs.FtpPassword = GetSingleOptionValue(OptFtpPassword, arg);
+                    StrCommand.AppendFormat("--{0} {1} ", OptFtpPassword.LongOpt, "***");
                 }
             }
 
 
             // Source
-            if (HasOption(_optSource, arg))
+            if (HasOption(OptSource, arg))
             {
-                retArgs.Source = GetSingleOptionValue(_optSource, arg);
+                retArgs.Source = GetSingleOptionValue(OptSource, arg);
 
                 if (retArgs.Direction == DirectionTrts.IN)
                 {
@@ -234,14 +230,14 @@ namespace TwoStageFileTransfer.business
                 }
 
 
-                StrCommand.AppendFormat("--{0} {1} ", _optSource.LongOpt, retArgs.Source);
+                StrCommand.AppendFormat("--{0} {1} ", OptSource.LongOpt, retArgs.Source);
             }
 
 
             // Target
-            if (HasOption(_optTarget, arg))
+            if (HasOption(OptTarget, arg))
             {
-                retArgs.Target = GetSingleOptionValue(_optTarget, arg);
+                retArgs.Target = GetSingleOptionValue(OptTarget, arg);
                 
 
                 if (retArgs.TransferType == TransferTypes.WindowsFolder)
@@ -255,28 +251,28 @@ namespace TwoStageFileTransfer.business
 
                 }
 
-                StrCommand.AppendFormat("--{0} {1} ", _optTarget.LongOpt, retArgs.Target);
+                StrCommand.AppendFormat("--{0} {1} ", OptTarget.LongOpt, retArgs.Target);
             }
 
 
             // BufferSize
-            if (HasOption(_optBufferSize, arg))
+            if (HasOption(OptBufferSize, arg))
             {
-                string rawBufferSize = GetSingleOptionValue(_optBufferSize, arg);
+                string rawBufferSize = GetSingleOptionValue(OptBufferSize, arg);
                 if (int.TryParse(rawBufferSize, out var bufferSize))
                 {
                     retArgs.BufferSize = bufferSize;
-                    StrCommand.AppendFormat("--{0} {1} ", _optBufferSize.LongOpt, retArgs.BufferSize);
+                    StrCommand.AppendFormat("--{0} {1} ", OptBufferSize.LongOpt, retArgs.BufferSize);
                 }
 
             }
 
 
             // ChunkSize
-            if (HasOption(_optChunkSize, arg))
+            if (HasOption(OptChunkSize, arg))
             {
-                string rawChunkSize = GetSingleOptionValue(_optChunkSize, arg);
-                long res = (long)AryxDevLibrary.utils.FileUtils.HumanReadableSizeToLong(rawChunkSize);
+                string rawChunkSize = GetSingleOptionValue(OptChunkSize, arg);
+                long res = (long)FileUtils.HumanReadableSizeToLong(rawChunkSize);
                 if (res != -1)
                 {
                     retArgs.ChunkSize = res;
@@ -290,7 +286,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException("Part file size muse be greater or equal than 1024 o");
                 }
-                StrCommand.AppendFormat("--{0} {1} ", _optChunkSize.LongOpt, retArgs.ChunkSize);
+                StrCommand.AppendFormat("--{0} {1} ", OptChunkSize.LongOpt, retArgs.ChunkSize);
 
             }
             else
@@ -299,27 +295,27 @@ namespace TwoStageFileTransfer.business
             }
 
 
-            if (HasOption(_optDoCompress, arg))
+            if (HasOption(OptDoCompress, arg))
             {
-                retArgs.IsDoCompress = HasOption(_optDoCompress, arg);
-                StrCommand.AppendFormat("--{0} ", _optDoCompress.LongOpt, retArgs.IsDoCompress);
+                retArgs.IsDoCompress = HasOption(OptDoCompress, arg);
+                StrCommand.AppendFormat("--{0} ", OptDoCompress.LongOpt);
             }
 
-            if (HasOption(_optCanOverwrite, arg))
+            if (HasOption(OptCanOverwrite, arg))
             {
-                retArgs.CanOverwrite = HasOption(_optCanOverwrite, arg);
-                StrCommand.AppendFormat("{0} ", _optCanOverwrite.LongOpt, retArgs.CanOverwrite);
+                retArgs.CanOverwrite = HasOption(OptCanOverwrite, arg);
+                StrCommand.AppendFormat("{0} ", OptCanOverwrite.LongOpt);
             }
 
 
-            if (HasOption(_optReprise, arg))
+            if (HasOption(OptReprise, arg))
             {
-                retArgs.ResumePart = GetSingleOptionValueInt(_optReprise, arg, 0);
+                retArgs.ResumePart = GetSingleOptionValueInt(OptReprise, arg, 0);
                 if (retArgs.ResumePart < 0)
                 {
                     throw new CliParsingException("Resume part must be positive or equal to zero");
                 }
-                StrCommand.AppendFormat("--{0} {1} ", _optReprise.LongOpt, retArgs.ResumePart);
+                StrCommand.AppendFormat("--{0} {1} ", OptReprise.LongOpt, retArgs.ResumePart);
             }
 
             return retArgs;

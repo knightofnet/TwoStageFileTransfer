@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TwoStageFileTransfer.constant
 {
@@ -26,8 +23,8 @@ namespace TwoStageFileTransfer.constant
             }
         }
 
-        public int Index { get; private set; }
-        public String Libelle { get; private set; }
+        public int Index { get; }
+        public String Libelle { get; }
 
 
         private EnumExitCodes(int index, String libelle)

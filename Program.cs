@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using System.Windows.Forms;
 using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.cliParser;
@@ -25,7 +24,7 @@ namespace TwoStageFileTransfer
 {
     class Program
     {
-        private static Logger _log = null;
+        private static Logger _log;
 
         private static readonly string AppDataDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TwoStageFileTransfer");
 

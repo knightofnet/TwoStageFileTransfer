@@ -1,10 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Xml;
-using System.Xml.Serialization;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
@@ -13,7 +10,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 {
     class OutToFileWork : AbstractOutWork
     {
-        private FileInfo _firstFile = null;
+        private FileInfo _firstFile ;
 
         public OutToFileWork(OutWorkOptions outToFileWork) : base(outToFileWork)
         {
@@ -148,7 +145,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             FileUtils.CalculculateSourceSha1(targetFile, sha1FinalFile);
 
-            return;
+           
         }
 
         private static FileInfo FindFirstFileSourceDir(FileInfo source)

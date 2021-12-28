@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-using TwoStageFileTransfer.business;
 using TwoStageFileTransfer.constant;
 
 namespace TwoStageFileTransfer.utils
@@ -116,11 +115,11 @@ namespace TwoStageFileTransfer.utils
         public static string ConsoleGetValidFilepath(string promptPhrase = "Enter filepath: ")
         {
             Console.WriteLine(promptPhrase);
-            string rawSource = Console.ReadLine()?.Trim(AppCst.TRIM_PATH_CHARS);
+            string rawSource = Console.ReadLine()?.Trim(AppCst.TrimPathChars);
             while (!File.Exists(rawSource))
             {
                 Console.WriteLine("The file '{0}' doesnt exist.", rawSource);
-                rawSource = Console.ReadLine()?.Trim(AppCst.TRIM_PATH_CHARS);
+                rawSource = Console.ReadLine()?.Trim(AppCst.TrimPathChars);
             }
 
             return rawSource;
@@ -135,7 +134,7 @@ namespace TwoStageFileTransfer.utils
             bool createIfNotExist = false)
         {
             Console.WriteLine(promptPhrase);
-            string rawSource = Console.ReadLine()?.Trim(AppCst.TRIM_PATH_CHARS);
+            string rawSource = Console.ReadLine()?.Trim(AppCst.TrimPathChars);
             if (!Directory.Exists(rawSource) && createIfNotExist)
             {
                 Directory.CreateDirectory(rawSource);
@@ -145,7 +144,7 @@ namespace TwoStageFileTransfer.utils
             while (!Directory.Exists(rawSource))
             {
                 Console.WriteLine("The directory '{0}' doesnt exist.", rawSource);
-                rawSource = Console.ReadLine()?.Trim(AppCst.TRIM_PATH_CHARS);
+                rawSource = Console.ReadLine()?.Trim(AppCst.TrimPathChars);
             }
 
             return rawSource;
@@ -216,7 +215,7 @@ namespace TwoStageFileTransfer.utils
 
             if (compSha1 != null)
             {
-                LogUtils.I(_log, string.Format("SHA1 match: {0}", sha1.ToUpper().Equals(compSha1?.ToUpper()) ? "OK" : "KO"));
+                LogUtils.I(_log, string.Format("SHA1 match: {0}", sha1.ToUpper().Equals(compSha1.ToUpper()) ? "OK" : "KO"));
             }
 
             TimeSpan duration = DateTime.Now - start;

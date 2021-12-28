@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TwoStageFileTransfer.constant;
+﻿using TwoStageFileTransfer.constant;
 
 namespace TwoStageFileTransfer.dto
 {
@@ -40,7 +35,7 @@ namespace TwoStageFileTransfer.dto
 
         public bool IsRunByExplorer()
         {
-            return SourceRun == SourceRuns.Explorer; ;
+            return SourceRun == SourceRuns.Explorer; 
         }
 
         

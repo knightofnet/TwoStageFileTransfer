@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using AryxDevLibrary.utils;
@@ -19,7 +18,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 {
     class FtpInWork : AbstractInWork
     {
-        private long _totalBytesRead = 0;
+        private long _totalBytesRead ;
         private byte[] _buffer;
 
         private readonly ICredentials _ftpCredentials;
@@ -90,7 +89,15 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                         if (fileCreatedIndex == 0)
                         {
-                            string tsftContent = WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length, partFileMaxLenght, sha1);
+
+                            string tsftContent = WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length, partFileMaxLenght, sha1,
+                                file =>
+                                {
+                                    file.TempDir.Type = TransferTypes.FTP;
+                                   
+                                    file.TempDir.FtpUsername = ((NetworkCredential)_ftpCredentials).UserName;
+                                    file.TempDir.FtpPassword = ((NetworkCredential)_ftpCredentials).Password;
+                                });
                             if (tsftContent != null)
                             {
                                 InWorkOptions.TsftFile = Path.Combine(InWorkOptions.Source.Directory.FullName, InWorkOptions.Source.Name + ".tsft");
@@ -109,39 +116,6 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             Console.WriteLine("Done.");
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
-        }
-
-        private string WriteTransferExchangeFile(string sourceName, long sourceLength, long partFileMaxLenght, string sha1)
-        {
-            TsftFile tsftFile = new TsftFile()
-            {
-                FileLenght = sourceLength,
-                Sha1Hash = sha1
-            };
-            tsftFile.Source.OriginalDirectory = InWorkOptions.Source.Directory.FullName;
-            tsftFile.Source.OriginalFilename = sourceName;
-
-            tsftFile.TempDir.Type = TransferTypes.FTP;
-            tsftFile.TempDir.Path = InWorkOptions.Target;
-            tsftFile.TempDir.FtpUsername = ((NetworkCredential)_ftpCredentials).UserName;
-            tsftFile.TempDir.FtpPassword = ((NetworkCredential)_ftpCredentials).Password;
-            tsftFile.TempDir.RegularPartFileLenght = partFileMaxLenght;
-            tsftFile.TempDir.AwaitedParts = (long)Math.Ceiling((double)(sourceLength / partFileMaxLenght));
-
-            XmlSerializer serializer = new XmlSerializer(tsftFile.GetType());
-            String xml = null;
-            using (var sww = new StringWriter())
-            {
-                using (XmlWriter writer = XmlWriter.Create(sww, new XmlWriterSettings() { Indent = false }))
-                {
-                    serializer.Serialize(writer, tsftFile);
-                    xml = sww.ToString();
-                }
-            }
-
-            return StringCipher.Encrypt(xml, "test");
-
-
         }
 
         protected override long CalculatePartFileMaxLenght()

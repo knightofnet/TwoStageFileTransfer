@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Xml;
@@ -21,7 +20,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
         //private readonly long _maxTransferFile;
         //private readonly long _chunkSize;
 
-        private long _totalBytesRead = 0;
+        private long _totalBytesRead ;
         private byte[] _buffer;
 
 
@@ -154,8 +153,9 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                 if (fileOutPath.TempFile.Exists)
                 {
                     fileOutPath.TempFile.Delete();
-                    throw ex;
+                    
                 }
+                throw ex;
             }
 
             return localBytesRead;
@@ -281,37 +281,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
         }
         */
 
-        private string WriteTransferExchangeFile(string sourceName, long sourceLength, long partFileMaxLenght, string sha1)
-        {
-            TsftFile tsftFile = new TsftFile()
-            {
-                FileLenght = sourceLength,
-                Sha1Hash = sha1
-            };
-            tsftFile.Source.OriginalDirectory = InWorkOptions.Source.Directory.FullName;
-            tsftFile.Source.OriginalFilename = sourceName;
 
-            tsftFile.TempDir.Type = TransferTypes.WindowsFolder;
-            tsftFile.TempDir.Path = InWorkOptions.Target;
-
-            tsftFile.TempDir.RegularPartFileLenght = partFileMaxLenght;
-            tsftFile.TempDir.AwaitedParts = (long)Math.Ceiling((double)(sourceLength / partFileMaxLenght));
-
-            XmlSerializer serializer = new XmlSerializer(tsftFile.GetType());
-            String xml;
-            using (var sww = new StringWriter())
-            {
-                using (XmlWriter writer = XmlWriter.Create(sww, new XmlWriterSettings() { Indent = false }))
-                {
-                    serializer.Serialize(writer, tsftFile);
-                    xml = sww.ToString();
-                }
-            }
-
-            return StringCipher.Encrypt(xml, "test");
-
-
-        }
 
         protected override long CalculatePartFileMaxLenght()
         {

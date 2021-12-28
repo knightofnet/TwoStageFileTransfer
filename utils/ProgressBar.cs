@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace TwoStageFileTransfer.utils
 {
@@ -18,11 +15,11 @@ namespace TwoStageFileTransfer.utils
 
 		private readonly Timer timer;
 
-		private double currentProgress = 0;
+		private double currentProgress ;
 		private string currentProgressText = string.Empty;
 		private string currentText = string.Empty;
-		private bool disposed = false;
-		private int animationIndex = 0;
+		private bool disposed ;
+		private int animationIndex ;
 
 		public ProgressBar()
 		{

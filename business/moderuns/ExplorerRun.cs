@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AryxDevLibrary.utils.logger;
-using TwoStageFileTransfer.constant;
+﻿using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 
@@ -26,7 +20,7 @@ namespace TwoStageFileTransfer.business.moderuns
 
                 if (appArgs.Target == null)
                 {
-                    appArgs.Target = FileUtils.WinformGetValidDirectorypath("Select filepath to transfer..."); ;
+                    appArgs.Target = FileUtils.WinformGetValidDirectorypath("Select filepath to transfer..."); 
                 }
             }
             else if (appArgs.Direction == DirectionTrts.OUT)
@@ -39,7 +33,7 @@ namespace TwoStageFileTransfer.business.moderuns
 
                 if (appArgs.Target == null)
                 {
-                   appArgs.Target = FileUtils.WinformGetValidDirectorypath("Select filepath to transfer..."); ;
+                   appArgs.Target = FileUtils.WinformGetValidDirectorypath("Select filepath to transfer..."); 
                     
                 }
             }
