@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TwoStageFileTransfer.constant;
 
-namespace TwoStageFileTransfer.dto
+namespace TwoStageFileTransfer.business
 {
-    class OutWorkOptions : CommonWorkOptions
+    class TsftFileManager
     {
-        public TsftFile Tsft { get; set; }
+
+       
     }
 }

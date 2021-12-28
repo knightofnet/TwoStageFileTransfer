@@ -17,7 +17,7 @@ namespace TwoStageFileTransfer.business.moderuns
 
         public override void InitLogAndAskForParams(AppArgs appArgs)
         {
-            if (appArgs.Direction == AppCst.MODE_IN)
+            if (appArgs.Direction == DirectionTrts.IN)
             {
                 if (appArgs.Source == null)
                 {
@@ -29,7 +29,7 @@ namespace TwoStageFileTransfer.business.moderuns
                     appArgs.Target = FileUtils.ConsoleGetValidDirectorypath("Enter target directory to transfer the part files: ");
                 }
             }
-            else if (appArgs.Direction == AppCst.MODE_OUT)
+            else if (appArgs.Direction == DirectionTrts.OUT)
             {
                 if (appArgs.Source == null)
                 {

@@ -45,7 +45,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AryxDevLibrary, Version=1.0.6.91, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\AryxDevLibrary.1.0.6.91\lib\net35-client\AryxDevLibrary.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\AryxDevLibrary\AryxDevLibrary4.0\bin\Debug\AryxDevLibrary.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -70,19 +71,26 @@
     <Compile Include="business\AppLogger.cs" />
     <Compile Include="business\transferworkers\AbstractInWork.cs" />
     <Compile Include="business\transferworkers\AbstractOutWork.cs" />
+    <Compile Include="business\transferworkers\inwork\FtpInWork.cs" />
     <Compile Include="business\transferworkers\inwork\InToOutWork.cs" />
     <Compile Include="business\moderuns\AbstractModeRun.cs" />
     <Compile Include="business\moderuns\CmdRun.cs" />
     <Compile Include="business\moderuns\ExplorerRun.cs" />
+    <Compile Include="business\transferworkers\outwork\FtpOutWork.cs" />
     <Compile Include="business\transferworkers\outwork\OutToFileWork.cs" />
+    <Compile Include="business\TsftFileCreator.cs" />
     <Compile Include="constant\AppCst.cs" />
+    <Compile Include="constant\DirectionTrts.cs" />
     <Compile Include="constant\EnumExitCodes.cs" />
     <Compile Include="constant\SourceRuns.cs" />
+    <Compile Include="constant\TransferTypes.cs" />
     <Compile Include="dto\AppArgs.cs" />
     <Compile Include="dto\AppFile.cs" />
+    <Compile Include="dto\AppFileFtp.cs" />
     <Compile Include="dto\CommonWorkOptions.cs" />
     <Compile Include="dto\InWorkOptions.cs" />
     <Compile Include="dto\OutWorkOptions.cs" />
+    <Compile Include="dto\TsftFile.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utils\AppUtils.cs" />
@@ -91,6 +99,7 @@
     <Compile Include="utils\LogUtils.cs" />
     <Compile Include="utils\ProcessUtils.cs" />
     <Compile Include="utils\ProgressBar.cs" />
+    <Compile Include="utils\StringCypher.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

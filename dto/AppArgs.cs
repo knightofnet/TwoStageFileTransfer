@@ -9,7 +9,7 @@ namespace TwoStageFileTransfer.dto
 {
     public class AppArgs
     {
-        public string Direction { get; internal set; }
+        public DirectionTrts Direction { get; internal set; }
         public string Source { get; internal set; }
         public string Target { get; internal set; }
 
@@ -19,6 +19,13 @@ namespace TwoStageFileTransfer.dto
         public long ChunkSize { get; internal set; }
         public bool CanOverwrite { get; set; }
         public SourceRuns SourceRun { get; set; }
+        public TransferTypes TransferType { get; set; }
+        public string FtpUser { get; set; }
+
+        public string FtpPassword { get; set; }
+        public TsftFile TsftFile { get; set; }
+        public int ResumePart { get; set; }
+
 
         public AppArgs()
         {

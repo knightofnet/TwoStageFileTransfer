@@ -2,8 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
+using System.Xml;
+using System.Xml.Serialization;
+using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
@@ -25,27 +29,27 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
         public InToOutWork(InWorkOptions inWorkOptions) : base(inWorkOptions)
         {
 
-
         }
 
-        public void DoTransfert()
+        public override void DoTransfert()
         {
-            long partFileMaxLenght = InWorkOptions.PartFileSize;
-            if (partFileMaxLenght == -1)
-            {
-                partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
-            }
+            long partFileMaxLenght = CalculatePartFileMaxLenght();
 
-            partFileMaxLenght = new[]
-            {
-                InWorkOptions.MaxSizeUsedOnShared, partFileMaxLenght,InWorkOptions.Source.Length
-            }.Min();
-
-            LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
-
-            int fileCreatedIndex = 0;
+            int fileCreatedIndex = InWorkOptions.StartPart;
 
             HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
+
+            bool targetExist = true;
+            if (!Directory.Exists(InWorkOptions.Target))
+            {
+                Directory.CreateDirectory(InWorkOptions.Target);
+                targetExist = Directory.Exists(InWorkOptions.Target);
+            }
+            if (!targetExist)
+            {
+                throw new DirectoryNotFoundException(
+                    $"Directory '{InWorkOptions.Target}' not found and impossible to create.");
+            }
 
             WarnForCompressedTargetDir(InWorkOptions.Target);
             TestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
@@ -60,6 +64,9 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                 using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
                 {
                     _buffer = new byte[InWorkOptions.BufferSize];
+
+                    _totalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
+                    fs.Seek(_totalBytesRead, SeekOrigin.Begin);
 
                     while (_totalBytesRead < fs.Length)
                     {
@@ -82,8 +89,16 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                         if (fileCreatedIndex == 0)
                         {
-                            WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length, sha1);
+                            string tsftFileContent = WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
+                                partFileMaxLenght, sha1);
+                            if (tsftFileContent != null)
+                            {
+                                InWorkOptions.TsftFile = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
+                                File.WriteAllText(InWorkOptions.TsftFile, tsftFileContent, Encoding.UTF8);
+                            }
                         }
+
+                        LastPartDone = fileCreatedIndex;
                         fileCreatedIndex++;
                     }
                 }
@@ -93,6 +108,8 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
         }
+
+
 
         private long WritePartFile(long chunk, ProgressBar pbar, FileStream fs, AppFile fileOutPath, DateTime localStart)
         {
@@ -251,6 +268,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             }
         }
 
+        /*
         private void WriteTransferExchangeFile(string originalFileName, long originalFileSize, string sha1)
         {
             StringBuilder s = new StringBuilder();
@@ -261,5 +279,57 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             String transfertFile = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
             File.WriteAllText(transfertFile, s.ToString(), Encoding.UTF8);
         }
+        */
+
+        private string WriteTransferExchangeFile(string sourceName, long sourceLength, long partFileMaxLenght, string sha1)
+        {
+            TsftFile tsftFile = new TsftFile()
+            {
+                FileLenght = sourceLength,
+                Sha1Hash = sha1
+            };
+            tsftFile.Source.OriginalDirectory = InWorkOptions.Source.Directory.FullName;
+            tsftFile.Source.OriginalFilename = sourceName;
+
+            tsftFile.TempDir.Type = TransferTypes.WindowsFolder;
+            tsftFile.TempDir.Path = InWorkOptions.Target;
+
+            tsftFile.TempDir.RegularPartFileLenght = partFileMaxLenght;
+            tsftFile.TempDir.AwaitedParts = (long)Math.Ceiling((double)(sourceLength / partFileMaxLenght));
+
+            XmlSerializer serializer = new XmlSerializer(tsftFile.GetType());
+            String xml;
+            using (var sww = new StringWriter())
+            {
+                using (XmlWriter writer = XmlWriter.Create(sww, new XmlWriterSettings() { Indent = false }))
+                {
+                    serializer.Serialize(writer, tsftFile);
+                    xml = sww.ToString();
+                }
+            }
+
+            return StringCipher.Encrypt(xml, "test");
+
+
+        }
+
+        protected override long CalculatePartFileMaxLenght()
+        {
+            long partFileMaxLenght = InWorkOptions.PartFileSize;
+            if (partFileMaxLenght == -1)
+            {
+                partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
+            }
+
+            partFileMaxLenght = new[]
+            {
+                InWorkOptions.MaxSizeUsedOnShared, partFileMaxLenght, InWorkOptions.Source.Length
+            }.Min();
+
+            LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
+            return partFileMaxLenght;
+        }
+
+
     }
 }

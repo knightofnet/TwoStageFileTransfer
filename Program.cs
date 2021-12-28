@@ -2,12 +2,16 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Text;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.cliParser;
 using TwoStageFileTransfer.business;
 using TwoStageFileTransfer.business.moderuns;
+using TwoStageFileTransfer.business.transferworkers;
 using TwoStageFileTransfer.business.transferworkers.inwork;
 using TwoStageFileTransfer.business.transferworkers.outwork;
 using TwoStageFileTransfer.dto;
@@ -40,6 +44,7 @@ namespace TwoStageFileTransfer
                 }
 
                 _log = new Logger(Path.Combine(AppDataDir, "log.log"), Logger.LogLvl.NONE, Logger.LogLvl.DEBUG, "1 Mo");
+                ExceptionHandlingUtils.Logger = _log;
 
                 AppHeader();
 
@@ -72,10 +77,15 @@ namespace TwoStageFileTransfer
 
             try
             {
+                bool isTsftFile = false;
+                string tsftFilePath = null;
                 if (args.Length == 1 && args[0].ToLower().EndsWith(".tsft"))
                 {
-                    appArgs = new AppArgs() { Direction = AppCst.MODE_OUT, Source = args[0] };
+                    appArgs = new AppArgs() { Direction = DirectionTrts.OUT, Source = args[0], TransferType = TransferTypes.WindowsFolder };
+                    isTsftFile = true;
+                    tsftFilePath = args[0];
                     D(_log, "Run with tsft file : Mode OUT");
+
                 }
                 else
                 {
@@ -83,7 +93,74 @@ namespace TwoStageFileTransfer
                     D(_log, "Run with parameters");
                     I(_log, $"Args input: {argsParser.StrCommand}");
 
+                    if (appArgs.Direction == DirectionTrts.OUT && appArgs.Source != null &&
+                        appArgs.Source.ToLower().EndsWith(".tsft"))
+                    {
+                        isTsftFile = true;
+                        tsftFilePath = appArgs.Source;
+                    }
+
                 }
+
+                string source = appArgs.Source;
+                if (appArgs.Direction == DirectionTrts.IN)
+                {
+                    source = appArgs.Target;
+                }
+                if (isTsftFile)
+                {
+                    String configFile = File.ReadAllText(tsftFilePath, Encoding.UTF8);
+                    configFile = StringCipher.Decrypt(configFile, "test");
+
+                    TsftFile tsftFile;
+                    using (TextReader reader = new StringReader(configFile))
+                    {
+                        tsftFile = (TsftFile)new XmlSerializer(typeof(TsftFile)).Deserialize(reader);
+                    }
+
+                    if (tsftFile.TempDir.Type == TransferTypes.FTP)
+                    {
+                        appArgs.TransferType = TransferTypes.FTP;
+
+                    }
+
+                    appArgs.TsftFile = tsftFile;
+                    appArgs.FtpUser = appArgs.TsftFile.TempDir.FtpUsername;
+                    appArgs.FtpPassword = appArgs.TsftFile.TempDir.FtpPassword;
+
+                    source = appArgs.TsftFile.TempDir.Path;
+
+                }
+
+                if (appArgs.TransferType == TransferTypes.FTP)
+                {
+
+
+                    Uri uriSource = new Uri(source);
+                    if (uriSource.Scheme != Uri.UriSchemeFtp)
+                    {
+                        throw new CliParsingException($"FTP path invalids ('{source}')");
+                    }
+
+
+                    NetworkCredential creds = new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword);
+                    Uri rootUri = FtpUtils.GetRootUri(uriSource);
+                    if (!FtpUtils.IsOkToConnect(rootUri, creds))
+                    {
+                        throw new CliParsingException($"Cant connect to {rootUri.AbsoluteUri}");
+                    }
+
+                    if (appArgs.Direction == DirectionTrts.OUT)
+                    {
+                        if (!FtpUtils.IsDirectoryExists(uriSource, creds) &&
+                            !FtpUtils.IsFileExists(uriSource, creds))
+                        {
+                            throw new CliParsingException($"FTP path '{source}' must be an existing file or directory");
+                        }
+                    }
+                }
+
+
             }
             catch (CliParsingException e)
             {
@@ -129,13 +206,17 @@ namespace TwoStageFileTransfer
             _modeRun.InitLogAndAskForParams(appArgs);
             switch (appArgs.Direction)
             {
-                case AppCst.MODE_IN:
+                case DirectionTrts.IN:
+                    _log.Debug("Go to log-IN.log");
                     _log = new Logger(Path.Combine(AppDataDir, "log-IN.log"), Logger.LogLvl.NONE, Logger.LogLvl.DEBUG, "1 Mo");
                     break;
-                case AppCst.MODE_OUT:
+                case DirectionTrts.OUT:
+                    _log.Debug("Go to log-OUT.log");
                     _log = new Logger(Path.Combine(AppDataDir, "log-OUT.log"), Logger.LogLvl.NONE, Logger.LogLvl.INFO, "1 Mo");
                     break;
             }
+
+
         }
 
         private static void DoWork(AppArgs appArgs, AppArgsParser argsParser)
@@ -144,43 +225,18 @@ namespace TwoStageFileTransfer
             {
                 switch (appArgs.Direction)
                 {
-                    case AppCst.MODE_IN:
+                    case DirectionTrts.IN:
                         {
                             I(_log, "First stage: transfer file from source to temp-shared folder");
 
-                            long maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
-                            I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
-
-                            InWorkOptions jobOptions = new InWorkOptions()
-                            {
-                                MaxSizeUsedOnShared = maxTransferLenght,
-                                PartFileSize = appArgs.ChunkSize,
-                                Source = new FileInfo(appArgs.Source),
-                                Target = appArgs.Target,
-                                BufferSize = appArgs.BufferSize,
-                                CanOverwrite = appArgs.CanOverwrite
-                            };
-
-                            InToOutWork w = new InToOutWork(jobOptions);
-
-                            w.DoTransfert();
+                            StartFirstStage(appArgs);
                             break;
                         }
-                    case AppCst.MODE_OUT:
+                    case DirectionTrts.OUT:
                         {
                             I(_log, "Second stage: recompose target file from part files from shared folder");
 
-                            OutWorkOptions jobOptions = new OutWorkOptions()
-                            {
-                                Source = new FileInfo(appArgs.Source),
-                                Target = appArgs.Target,
-                                BufferSize = appArgs.BufferSize,
-                                CanOverwrite = appArgs.CanOverwrite
-                            };
-
-                            OutToFileWork o = new OutToFileWork(jobOptions);
-
-                            o.DoTransfert();
+                            StartSecondStage(appArgs);
                             break;
                         }
                     default:
@@ -199,11 +255,99 @@ namespace TwoStageFileTransfer
                     Console.Read();
                 }
 
+                Environment.Exit(EnumExitCodes.KO.Index);
+
             }
             finally
             {
                 Console.WriteLine();
             }
+        }
+
+
+
+        private static void StartFirstStage(AppArgs appArgs)
+        {
+           
+            long maxTransferLenght = appArgs.ChunkSize;
+            if (appArgs.TransferType == TransferTypes.WindowsFolder)
+            {
+                maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
+                I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
+            } else if (appArgs.TransferType == TransferTypes.FTP)
+            {
+                //I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
+            }
+
+
+
+            InWorkOptions jobOptions = new InWorkOptions()
+            {
+                MaxSizeUsedOnShared = maxTransferLenght,
+                PartFileSize = appArgs.ChunkSize,
+                Source = new FileInfo(appArgs.Source),
+                Target = appArgs.Target,
+                BufferSize = appArgs.BufferSize,
+                CanOverwrite = appArgs.CanOverwrite,
+                StartPart = appArgs.ResumePart
+            };
+
+            AbstractInWork w = null;
+            if (appArgs.TransferType == TransferTypes.WindowsFolder)
+            {
+                w = new InToOutWork(jobOptions);
+            }
+            else if (appArgs.TransferType == TransferTypes.FTP)
+            {
+                w =
+                    new FtpInWork(new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword),
+                        jobOptions);
+            }
+
+            try
+            {
+                w.DoTransfert();
+            }
+            catch (Exception ex)
+            {
+                if (w != null)
+                {
+                    if (w.LastPartDone > 0)
+                    {
+                        I(_log, $"You can try resume by adding : --resume-part {(w.LastPartDone + 1)}");
+                    }
+                }
+
+                throw ex;
+            }
+
+        }
+
+        private static void StartSecondStage(AppArgs appArgs)
+        {
+            OutWorkOptions jobOptions = new OutWorkOptions()
+            {
+                Source = new FileInfo(appArgs.Source),
+                Target = appArgs.Target,
+                BufferSize = appArgs.BufferSize,
+                CanOverwrite = appArgs.CanOverwrite,
+                Tsft = appArgs.TsftFile
+            };
+
+            AbstractOutWork o = null;
+            if (appArgs.TransferType == TransferTypes.WindowsFolder)
+            {
+                o = new OutToFileWork(jobOptions);
+            }
+            else if (appArgs.TransferType == TransferTypes.FTP)
+            {
+                o =
+                    new FtpOutWork(new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword),
+                        jobOptions);
+            }
+
+
+            o.DoTransfert();
         }
 
         private static void AppHeader()

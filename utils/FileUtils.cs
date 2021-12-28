@@ -25,10 +25,12 @@ namespace TwoStageFileTransfer.utils
         {
             DirectoryInfo t = new DirectoryInfo(target);
 
+            /*
             if (!t.Exists)
             {
                 throw new Exception(target + " doesnt exist");
             }
+            */
 
             if (target.StartsWith(@"\\"))
             {

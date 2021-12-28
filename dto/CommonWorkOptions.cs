@@ -15,5 +15,7 @@ namespace TwoStageFileTransfer.dto
         public int BufferSize { get; internal set; }
 
         public bool CanOverwrite { get; internal set; }
+
+        public int StartPart { get; set; }
     }
 }

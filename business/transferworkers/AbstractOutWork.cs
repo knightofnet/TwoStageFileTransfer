@@ -15,5 +15,7 @@ namespace TwoStageFileTransfer.business.transferworkers
         {
             Options = outWorkOptions;
         }
+
+        public abstract void DoTransfert();
     }
 }

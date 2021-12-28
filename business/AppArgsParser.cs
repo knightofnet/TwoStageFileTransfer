@@ -1,11 +1,14 @@
 ﻿using AryxDevLibrary.utils.cliParser;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 
@@ -85,6 +88,49 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
+        private static readonly Option _optProtocolType = new Option()
+        {
+            ShortOpt = "p",
+            LongOpt = "protocol",
+            Description = "Protocol: Windows,Ftp. Default: Windows",
+            HasArgs = true,
+            Name = "_optProtocolType",
+            IsMandatory = false
+        };
+
+
+        private static readonly Option _optFtpUser = new Option()
+        {
+            ShortOpt = "pu",
+            LongOpt = "protocol-username",
+            Description = "Username for connecting to the protocol (ex: FTP)",
+            HasArgs = true,
+            Name = "_optFtpUser",
+            IsMandatory = false
+        };
+
+        private static readonly Option _optFtpPassword = new Option()
+        {
+            ShortOpt = "pp",
+            LongOpt = "protocol-password",
+            Description = "Password for connecting to the protocol (ex: FTP)",
+            HasArgs = true,
+            Name = "_optFtpPassword",
+            IsMandatory = false
+        };
+
+
+        private static readonly Option _optReprise = new Option()
+        {
+            ShortOpt = "r",
+            LongOpt = "resume-part",
+            Description = "a",
+            HasArgs = true,
+            Name = "_optReprise",
+            IsMandatory = false,
+            IsHiddenInHelp = true
+        };
+
         public AppArgsParser()
         {
             AddOption(_optSens);
@@ -94,6 +140,13 @@ namespace TwoStageFileTransfer.business
             AddOption(_optBufferSize);
             AddOption(_optChunkSize);
             AddOption(_optCanOverwrite);
+
+            AddOption(_optReprise);
+
+
+            AddOption(_optProtocolType);
+            AddOption(_optFtpUser);
+            AddOption(_optFtpPassword);
 
         }
 
@@ -108,36 +161,105 @@ namespace TwoStageFileTransfer.business
         {
             AppArgs retArgs = new AppArgs();
             StrCommand = new StringBuilder(Path.GetFileName(Assembly.GetExecutingAssembly().Location) + " ");
-            
 
-            retArgs.Direction = GetSingleOptionValue(_optSens, arg).ToUpper();
-            if (retArgs.Direction != AppCst.MODE_IN && retArgs.Direction != AppCst.MODE_OUT)
+            // Direction
+            string rawSource = GetSingleOptionValue(_optSens, arg, "NONE");
+            retArgs.Direction = (DirectionTrts)Enum.Parse(typeof(DirectionTrts), rawSource, true);
+            if (retArgs.Direction != DirectionTrts.IN && retArgs.Direction != DirectionTrts.OUT)
             {
                 throw new CliParsingException("Direction must be 'in' or 'out'");
             }
             StrCommand.AppendFormat("--{0} {1} ", _optSens.LongOpt, retArgs.Direction);
 
 
+            // TransferType
+            string rawTransfertType =
+                GetSingleOptionValue(_optProtocolType, arg, TransferTypes.WindowsFolder.ToString());
+            retArgs.TransferType = (TransferTypes)Enum.Parse(typeof(TransferTypes), rawTransfertType, true);
+            if (HasOption(_optProtocolType, arg))
+            {
+                StrCommand.AppendFormat("--{0} {1} ", _optProtocolType.LongOpt, retArgs.TransferType);
+            }
+
+
+            // Username and password for FTP
+            if (retArgs.TransferType == TransferTypes.FTP &&
+                (HasOption(_optFtpUser, arg) || HasOption(_optFtpPassword, arg))
+            )
+            {
+                if (HasOption(_optFtpUser, arg))
+                {
+                    retArgs.FtpUser = GetSingleOptionValue(_optFtpUser, arg);
+                    StrCommand.AppendFormat("--{0} {1} ", _optFtpUser.LongOpt, retArgs.FtpUser);
+                }
+
+                if (HasOption(_optFtpPassword, arg))
+                {
+                    retArgs.FtpPassword = GetSingleOptionValue(_optFtpPassword, arg);
+                    StrCommand.AppendFormat("--{0} {1} ", _optFtpPassword.LongOpt, "***");
+                }
+            }
+
+
+            // Source
             if (HasOption(_optSource, arg))
             {
                 retArgs.Source = GetSingleOptionValue(_optSource, arg);
-                if (!File.Exists(retArgs.Source) && !Directory.Exists(retArgs.Source))
+
+                if (retArgs.Direction == DirectionTrts.IN)
                 {
-                    throw new CliParsingException($"Source '{retArgs.Source}' must exist");
+                    if (!FileUtils.IsAFile(retArgs.Source) || !File.Exists(retArgs.Source))
+                    {
+                        throw new CliParsingException($"Source '{retArgs.Source}' must be an existing file");
+                    }
+
+                    retArgs.Source = Path.GetFullPath(retArgs.Source);
                 }
+                else if (retArgs.Direction == DirectionTrts.OUT && retArgs.TransferType == TransferTypes.WindowsFolder)
+                {
+                    if (!File.Exists(retArgs.Source) && !Directory.Exists(retArgs.Source))
+                    {
+                        throw new CliParsingException($"Source '{retArgs.Source}' must be an existing file or directory");
+                    }
+                    retArgs.Source = Path.GetFullPath(retArgs.Source);
+                }
+                else if (retArgs.Direction == DirectionTrts.OUT && retArgs.TransferType == TransferTypes.FTP)
+                {
+                    if (FileUtils.IsValidFilepath(retArgs.Source) && !retArgs.Source.ToLower().EndsWith(".tsft"))
+                    {
+                        throw new CliParsingException($"If source is a file, it must be a valid tsft file.");
+                    }
+
+
+                }
+
+
                 StrCommand.AppendFormat("--{0} {1} ", _optSource.LongOpt, retArgs.Source);
             }
 
+
+            // Target
             if (HasOption(_optTarget, arg))
             {
                 retArgs.Target = GetSingleOptionValue(_optTarget, arg);
-                if (!File.Exists(retArgs.Target) && !Directory.Exists(retArgs.Target))
+                
+
+                if (retArgs.TransferType == TransferTypes.WindowsFolder)
                 {
-                    throw new CliParsingException($"Target '{retArgs.Target}' must exist");
+                    retArgs.Target = Path.GetFullPath(retArgs.Target);
+
+                } else if (retArgs.Direction == DirectionTrts.IN && retArgs.TransferType == TransferTypes.FTP)
+                {
+
+
+
                 }
+
                 StrCommand.AppendFormat("--{0} {1} ", _optTarget.LongOpt, retArgs.Target);
             }
 
+
+            // BufferSize
             if (HasOption(_optBufferSize, arg))
             {
                 string rawBufferSize = GetSingleOptionValue(_optBufferSize, arg);
@@ -146,15 +268,17 @@ namespace TwoStageFileTransfer.business
                     retArgs.BufferSize = bufferSize;
                     StrCommand.AppendFormat("--{0} {1} ", _optBufferSize.LongOpt, retArgs.BufferSize);
                 }
-                
+
             }
 
+
+            // ChunkSize
             if (HasOption(_optChunkSize, arg))
             {
                 string rawChunkSize = GetSingleOptionValue(_optChunkSize, arg);
                 long res = (long)AryxDevLibrary.utils.FileUtils.HumanReadableSizeToLong(rawChunkSize);
-                if (res != -1 )
-                {                    
+                if (res != -1)
+                {
                     retArgs.ChunkSize = res;
                 }
                 else if (long.TryParse(rawChunkSize, out var chunkSize))
@@ -162,7 +286,7 @@ namespace TwoStageFileTransfer.business
                     retArgs.ChunkSize = chunkSize;
                 }
 
-                if (retArgs.ChunkSize  < 1024)                
+                if (retArgs.ChunkSize < 1024)
                 {
                     throw new CliParsingException("Part file size muse be greater or equal than 1024 o");
                 }
@@ -173,6 +297,7 @@ namespace TwoStageFileTransfer.business
             {
                 retArgs.ChunkSize = -1;
             }
+
 
             if (HasOption(_optDoCompress, arg))
             {
@@ -186,11 +311,22 @@ namespace TwoStageFileTransfer.business
                 StrCommand.AppendFormat("{0} ", _optCanOverwrite.LongOpt, retArgs.CanOverwrite);
             }
 
+
+            if (HasOption(_optReprise, arg))
+            {
+                retArgs.ResumePart = GetSingleOptionValueInt(_optReprise, arg, 0);
+                if (retArgs.ResumePart < 0)
+                {
+                    throw new CliParsingException("Resume part must be positive or equal to zero");
+                }
+                StrCommand.AppendFormat("--{0} {1} ", _optReprise.LongOpt, retArgs.ResumePart);
+            }
+
             return retArgs;
 
 
         }
 
-        
+
     }
 }
