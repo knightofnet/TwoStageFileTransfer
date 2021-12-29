@@ -91,6 +91,7 @@
     <Compile Include="dto\InWorkOptions.cs" />
     <Compile Include="dto\OutWorkOptions.cs" />
     <Compile Include="dto\TsftFile.cs" />
+    <Compile Include="exceptions\AppException.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utils\AppUtils.cs" />

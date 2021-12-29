@@ -13,7 +13,7 @@ namespace TwoStageFileTransfer.business
     class AppArgsParser : CliParser<AppArgs>
     {
 
-        private static readonly Option OptSens = new Option()
+        public static readonly Option OptSens = new Option()
         {
             ShortOpt = "d",
             LongOpt = "direction",
@@ -24,7 +24,7 @@ namespace TwoStageFileTransfer.business
 
         };
 
-        private static readonly Option OptSource = new Option()
+        internal static readonly Option OptSource = new Option()
         {
             ShortOpt = "s",
             LongOpt = "source",
@@ -34,7 +34,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptTarget = new Option()
+        internal static readonly Option OptTarget = new Option()
         {
             ShortOpt = "t",
             LongOpt = "target",
@@ -44,7 +44,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptChunkSize = new Option()
+        internal static readonly Option OptChunkSize = new Option()
         {
             ShortOpt = "c",
             LongOpt = "chunk",
@@ -54,7 +54,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptDoCompress = new Option()
+        internal static readonly Option OptDoCompress = new Option()
         {
             ShortOpt = "dc",
             LongOpt = "compress-before",
@@ -64,7 +64,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptBufferSize = new Option()
+        internal static readonly Option OptBufferSize = new Option()
         {
             ShortOpt = "b",
             LongOpt = "buffer-size",
@@ -74,7 +74,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptCanOverwrite = new Option()
+        internal static readonly Option OptCanOverwrite = new Option()
         {
             ShortOpt = "w",
             LongOpt = "overwrite",
@@ -84,7 +84,20 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptProtocolType = new Option()
+        internal static readonly Option OptKeepPartFiles = new Option()
+        {
+            ShortOpt = "k",
+            LongOpt = "keep-part-files",
+            Description = "Does not delete part files after reading in 'out' mode. " +
+                            "Allows to restart the redial process several times, but may prevent the " +
+                            "first step from finishing if the maximum size allowed by the transfer is " +
+                            "reached and therefore the program is waiting.",
+            HasArgs = false,
+            Name = "_optKeepPartFiles",
+            IsMandatory = false
+        };
+
+        internal static readonly Option OptProtocolType = new Option()
         {
             ShortOpt = "p",
             LongOpt = "protocol",
@@ -95,7 +108,7 @@ namespace TwoStageFileTransfer.business
         };
 
 
-        private static readonly Option OptFtpUser = new Option()
+        internal static readonly Option OptFtpUser = new Option()
         {
             ShortOpt = "pu",
             LongOpt = "protocol-username",
@@ -105,7 +118,7 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
-        private static readonly Option OptFtpPassword = new Option()
+        internal static readonly Option OptFtpPassword = new Option()
         {
             ShortOpt = "pp",
             LongOpt = "protocol-password",
@@ -115,8 +128,21 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
+        internal static readonly Option OptIncludeCredsInTsftFile = new Option()
+        {
+            ShortOpt = "pw",
+            LongOpt = "tsft-with-credentials",
+            Description = "In the 'in' mode, when credentials need to be used (e.g. " +
+                          "with the FTP protocol), include these data in the generated" +
+                          " TSFT file. This way, in the 'out' mode, these data will " +
+                          "not be requested again, only the passphrase will be",
+            HasArgs = false,
+            Name = "OptIncludeCredentialsInTsftFile",
+            IsMandatory = false
+        };
 
-        private static readonly Option OptReprise = new Option()
+
+        internal static readonly Option OptReprise = new Option()
         {
             ShortOpt = "r",
             LongOpt = "resume-part",
@@ -136,13 +162,18 @@ namespace TwoStageFileTransfer.business
             AddOption(OptBufferSize);
             AddOption(OptChunkSize);
             AddOption(OptCanOverwrite);
+            AddOption(OptKeepPartFiles);
+
 
             AddOption(OptReprise);
+
 
 
             AddOption(OptProtocolType);
             AddOption(OptFtpUser);
             AddOption(OptFtpPassword);
+
+            AddOption(OptIncludeCredsInTsftFile);
 
         }
 
@@ -165,16 +196,16 @@ namespace TwoStageFileTransfer.business
             {
                 throw new CliParsingException("Direction must be 'in' or 'out'");
             }
-            StrCommand.AppendFormat("--{0} {1} ", OptSens.LongOpt, retArgs.Direction);
+            StrCommand.AppendFormat("-{0} {1} ", OptSens.ShortOpt, retArgs.Direction);
 
 
             // TransferType
             string rawTransfertType =
-                GetSingleOptionValue(OptProtocolType, arg, TransferTypes.WindowsFolder.ToString());
+                GetSingleOptionValue(OptProtocolType, arg, TransferTypes.Windows.ToString());
             retArgs.TransferType = (TransferTypes)Enum.Parse(typeof(TransferTypes), rawTransfertType, true);
             if (HasOption(OptProtocolType, arg))
             {
-                StrCommand.AppendFormat("--{0} {1} ", OptProtocolType.LongOpt, retArgs.TransferType);
+                StrCommand.AppendFormat("-{0} {1} ", OptProtocolType.ShortOpt, retArgs.TransferType);
             }
 
 
@@ -186,13 +217,13 @@ namespace TwoStageFileTransfer.business
                 if (HasOption(OptFtpUser, arg))
                 {
                     retArgs.FtpUser = GetSingleOptionValue(OptFtpUser, arg);
-                    StrCommand.AppendFormat("--{0} {1} ", OptFtpUser.LongOpt, retArgs.FtpUser);
+                    StrCommand.AppendFormat("-{0} {1} ", OptFtpUser.ShortOpt, retArgs.FtpUser);
                 }
 
                 if (HasOption(OptFtpPassword, arg))
                 {
                     retArgs.FtpPassword = GetSingleOptionValue(OptFtpPassword, arg);
-                    StrCommand.AppendFormat("--{0} {1} ", OptFtpPassword.LongOpt, "***");
+                    StrCommand.AppendFormat("-{0} {1} ", OptFtpPassword.ShortOpt, "***");
                 }
             }
 
@@ -211,7 +242,7 @@ namespace TwoStageFileTransfer.business
 
                     retArgs.Source = Path.GetFullPath(retArgs.Source);
                 }
-                else if (retArgs.Direction == DirectionTrts.OUT && retArgs.TransferType == TransferTypes.WindowsFolder)
+                else if (retArgs.Direction == DirectionTrts.OUT && retArgs.TransferType == TransferTypes.Windows)
                 {
                     if (!File.Exists(retArgs.Source) && !Directory.Exists(retArgs.Source))
                     {
@@ -230,7 +261,7 @@ namespace TwoStageFileTransfer.business
                 }
 
 
-                StrCommand.AppendFormat("--{0} {1} ", OptSource.LongOpt, retArgs.Source);
+                StrCommand.AppendFormat("-{0} {1} ", OptSource.ShortOpt, retArgs.Source);
             }
 
 
@@ -238,20 +269,21 @@ namespace TwoStageFileTransfer.business
             if (HasOption(OptTarget, arg))
             {
                 retArgs.Target = GetSingleOptionValue(OptTarget, arg);
-                
 
-                if (retArgs.TransferType == TransferTypes.WindowsFolder)
+
+                if (retArgs.TransferType == TransferTypes.Windows)
                 {
                     retArgs.Target = Path.GetFullPath(retArgs.Target);
 
-                } else if (retArgs.Direction == DirectionTrts.IN && retArgs.TransferType == TransferTypes.FTP)
+                }
+                else if (retArgs.Direction == DirectionTrts.IN && retArgs.TransferType == TransferTypes.FTP)
                 {
 
 
 
                 }
 
-                StrCommand.AppendFormat("--{0} {1} ", OptTarget.LongOpt, retArgs.Target);
+                StrCommand.AppendFormat("-{0} {1} ", OptTarget.ShortOpt, retArgs.Target);
             }
 
 
@@ -262,7 +294,7 @@ namespace TwoStageFileTransfer.business
                 if (int.TryParse(rawBufferSize, out var bufferSize))
                 {
                     retArgs.BufferSize = bufferSize;
-                    StrCommand.AppendFormat("--{0} {1} ", OptBufferSize.LongOpt, retArgs.BufferSize);
+                    StrCommand.AppendFormat("-{0} {1} ", OptBufferSize.ShortOpt, retArgs.BufferSize);
                 }
 
             }
@@ -286,7 +318,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException("Part file size muse be greater or equal than 1024 o");
                 }
-                StrCommand.AppendFormat("--{0} {1} ", OptChunkSize.LongOpt, retArgs.ChunkSize);
+                StrCommand.AppendFormat("-{0} {1} ", OptChunkSize.ShortOpt, retArgs.ChunkSize);
 
             }
             else
@@ -298,14 +330,30 @@ namespace TwoStageFileTransfer.business
             if (HasOption(OptDoCompress, arg))
             {
                 retArgs.IsDoCompress = HasOption(OptDoCompress, arg);
-                StrCommand.AppendFormat("--{0} ", OptDoCompress.LongOpt);
+                StrCommand.AppendFormat("-{0} ", OptDoCompress.ShortOpt);
             }
 
             if (HasOption(OptCanOverwrite, arg))
             {
                 retArgs.CanOverwrite = HasOption(OptCanOverwrite, arg);
-                StrCommand.AppendFormat("{0} ", OptCanOverwrite.LongOpt);
+                StrCommand.AppendFormat("-{0} ", OptCanOverwrite.ShortOpt);
             }
+
+            if (HasOption(OptIncludeCredsInTsftFile, arg))
+            {
+                retArgs.IncludeCredsInTsft = HasOption(OptIncludeCredsInTsftFile, arg);
+                StrCommand.AppendFormat("-{0} ", OptIncludeCredsInTsftFile.ShortOpt);
+            }
+
+            if (HasOption(OptKeepPartFiles, arg))
+            {
+                retArgs.KeepPartFiles = HasOption(OptKeepPartFiles, arg);
+                StrCommand.AppendFormat("-{0} ", OptKeepPartFiles.ShortOpt);
+            }
+
+
+            
+
 
 
             if (HasOption(OptReprise, arg))
@@ -315,8 +363,10 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new CliParsingException("Resume part must be positive or equal to zero");
                 }
-                StrCommand.AppendFormat("--{0} {1} ", OptReprise.LongOpt, retArgs.ResumePart);
+                StrCommand.AppendFormat("-{0} {1} ", OptReprise.ShortOpt, retArgs.ResumePart);
             }
+
+
 
             return retArgs;
 

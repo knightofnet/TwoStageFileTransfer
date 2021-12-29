@@ -6,6 +6,7 @@ using System.Threading;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
+using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
 using FileUtils = TwoStageFileTransfer.utils.FileUtils;
 
@@ -41,6 +42,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 finalFileName = Options.Tsft.Source.OriginalFilename;
                 sha1FinalFile = Options.Tsft.Sha1Hash;
 
+                /*
                 if (String.IsNullOrWhiteSpace(_ftpCredentials.UserName))
                 {
                     _ftpCredentials = new NetworkCredential(Options.Tsft.TempDir.FtpUsername,
@@ -52,6 +54,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 {
                     throw new Exception($"Unable to established a connexion to ${serverHost.AbsoluteUri}");
                 }
+                */
 
                 _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0), _ftpCredentials);
             }
@@ -65,12 +68,8 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             FileInfo targetFile = new FileInfo(Path.Combine(Options.Target, "~" + finalFileName));
             FileInfo rTargetFile = new FileInfo(Path.Combine(Options.Target, finalFileName));
-            if (rTargetFile.Exists)
-            {
-                _log.Warn("{0} already exists : delete");
-                rTargetFile.Delete();
-                rTargetFile.Refresh();
-            }
+            TestFileAlreadyExists(rTargetFile);
+            
 
             Console.Write("Recomposing file... ");
             DateTime mainStart = DateTime.Now;
@@ -82,6 +81,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 AppFileFtp currentFileToRead = _firstFile;
 
                 FtpUtils.LogListDir(currentFileToRead.DirectoryParent, _ftpCredentials);
+                byte[] buffer = new byte[Options.BufferSize];
 
                 while (totalBytesRead < totalBytesToRead)
                 {
@@ -90,18 +90,18 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     while (!currentFileToRead.Exists() )
                     {
                         fo.Flush();
-                        Console.Title = string.Format("TSFT - Out - Waiting for {0}", currentFileToRead.File.AbsolutePath);
+                        Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}";
+                        pbar.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
                         Thread.Sleep(300);
-                       
 
                         if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
                         {
-                            throw new Exception(string.Format("Waits too long time for {0}", currentFileToRead.File.AbsolutePath));
+                            throw new Exception($"Waits too long time for {currentFileToRead.File.AbsolutePath}");
                         }
                     }
 
                     string msg = "Reading file " + currentFileToRead.File.Segments.Last();
-                    Console.Title = string.Format("TSFT - Out - {0}", msg);
+                    Console.Title = $"TSFT - Out - {msg}";
                     _log.Debug(msg);
 
                     FtpWebRequest request = (FtpWebRequest)WebRequest.Create(currentFileToRead.File);
@@ -111,25 +111,32 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     request.UsePassive = true;
                     request.UseBinary = true;
 
-                    byte[] buffer = new byte[Options.BufferSize];
+                    DateTime localStart = DateTime.Now;
+                    long localBytesRead = 0;
+                   
                     using (Stream fr = request.GetResponse().GetResponseStream())
                     {
-
+                        
                         Array.Clear(buffer, 0, buffer.Length);
                         int bytesRead;
 
                         while (fr != null && (bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             totalBytesRead += bytesRead;
+                            localBytesRead += bytesRead;
                             fo.Write(buffer, 0, bytesRead);
+                            pbar.Report((double)totalBytesRead / totalBytesToRead, AppUtils.GetTransferSpeed(localBytesRead, localStart));
                         }
-                        pbar.Report((double)totalBytesRead / totalBytesToRead, "");
+                       
 
                     }
 
                     _log.Debug("> OK");
-                    currentFileToRead.Delete();
-                    _log.Debug("> File part deleted");
+                    if (!Options.KeepPartFiles)
+                    {
+                        currentFileToRead.Delete();
+                        _log.Debug("> File part deleted");
+                    }
 
                     currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++), _ftpCredentials);
 
@@ -152,6 +159,8 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
           
         }
+
+
 
         private static FileInfo FindFirstFileSourceDir(FileInfo source)
         {

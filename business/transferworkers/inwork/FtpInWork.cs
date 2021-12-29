@@ -10,6 +10,7 @@ using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
+using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
 using FileUtils = TwoStageFileTransfer.utils.FileUtils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
@@ -38,7 +39,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             HashSet<AppFileFtp> listFiles = new HashSet<AppFileFtp>();
 
 
-            //TestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
+            MainTestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
 
             Uri targetUri = FtpUtils.NewFtpUri(InWorkOptions.Target);
             bool targetExist = true;
@@ -66,6 +67,10 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                     _totalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
                     fs.Seek(_totalBytesRead, SeekOrigin.Begin);
+                    if (_totalBytesRead > 0)
+                    {
+                        pbar.Report((double)_totalBytesRead / fs.Length, "Resuming");
+                    }
 
                     while (_totalBytesRead < fs.Length)
                     {
@@ -76,7 +81,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                         DateTime localStart = DateTime.Now;
 
-                        long localBytesRead = WritePartFile(partFileMaxLenght, pbar, fs, fileFtp, localStart);
+                        long localBytesRead = WritePartFile(partFileMaxLenght, pbar, fs, fileFtp, localStart,3);
 
 
                         listFiles.Add(fileFtp);
@@ -94,17 +99,20 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                                 file =>
                                 {
                                     file.TempDir.Type = TransferTypes.FTP;
-                                   
-                                    file.TempDir.FtpUsername = ((NetworkCredential)_ftpCredentials).UserName;
-                                    file.TempDir.FtpPassword = ((NetworkCredential)_ftpCredentials).Password;
+
+                                    if (InWorkOptions.AppArgs.IncludeCredsInTsft)
+                                    {
+                                        file.TempDir.FtpUsername = ((NetworkCredential)_ftpCredentials).UserName;
+                                        file.TempDir.FtpPassword = ((NetworkCredential)_ftpCredentials).Password;
+                                    }
                                 });
                             if (tsftContent != null)
                             {
-                                InWorkOptions.TsftFile = Path.Combine(InWorkOptions.Source.Directory.FullName, InWorkOptions.Source.Name + ".tsft");
-                                File.WriteAllText(InWorkOptions.TsftFile, tsftContent, Encoding.UTF8);
+                                InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Source.Directory.FullName, InWorkOptions.Source.Name + ".tsft");
+                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftContent, Encoding.UTF8);
 
                                 FtpUtils.UploadFileToServer(fileFtp.DirectoryParent, _ftpCredentials,
-                                    new FileInfo(InWorkOptions.TsftFile));
+                                    new FileInfo(InWorkOptions.TsftFilePath));
                             }
                         }
 
@@ -136,6 +144,33 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             return partFileMaxLenght;
         }
 
+        private long WritePartFile(long partFileMaxLenght, ProgressBar pbar, FileStream fs, AppFileFtp fileOutPath, DateTime localStart, int nbTentative)
+        {
+
+            while (nbTentative > 0)
+            {
+                try
+                {
+                    return WritePartFile(partFileMaxLenght, pbar, fs, fileOutPath, localStart);
+
+                }
+                catch (Exception e)
+                {
+                    nbTentative--;
+                    if (nbTentative <= 0)
+                    {
+                        throw new AppException("Error while writing part file", e, EnumExitCodes.KO_WRITING_PARTFILE);
+                    }
+
+                    _log.Info("Error while writing part file. Re-try in 30s");
+                    Thread.Sleep(30 * 1000);
+                    pbar.Report((double)_totalBytesRead / fs.Length, "Retry");
+                }
+
+            }
+            return 0;
+        }
+
 
         private long WritePartFile(long chunk, ProgressBar pbar, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
         {
@@ -153,7 +188,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                 using (Stream fo = request.GetRequestStream())
                 {
-                    //fo.SetLength(Math.Min(chunk, InWorkOptions.Source.Length - _totalBytesRead));
+                  
 
                     string msg = "Creating part file " + fileOutPath.FileTemp.LocalPath;
                     Console.Title = $"TSFT - In - {msg}";
@@ -168,6 +203,8 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                         localBytesRead += bytesRead;
 
                         fo.Write(_buffer, 0, bytesRead);
+                        pbar.Report((double)_totalBytesRead / fs.Length, AppUtils.GetTransferSpeed(localBytesRead, localStart));
+
 
                         if (localBytesRead + InWorkOptions.BufferSize > chunk ||
                             localBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
@@ -189,20 +226,20 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                     }
                 }
 
-                pbar.Report((double)_totalBytesRead / fs.Length, GetTransferSpeed(localBytesRead, localStart));
 
                 fileOutPath.MoveToNormal();
             }
             catch (Exception ex)
             {
                 _log.Debug($"Error while uploading : {ex.Message}");
-                /*
-                if (fileOutPath.TempFile.Exists)
+               
+                if (fileOutPath.Exists())
                 {
-                    fileOutPath.TempFile.Delete();
-                    throw ex;
+                    fileOutPath.Delete();
+                    
                 }
-                */
+
+                throw ex;
             }
 
             return localBytesRead;
@@ -219,19 +256,13 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
         private void WaitForFreeSpace(HashSet<AppFileFtp> listFiles)
         {
             bool mustWriteLogStatus = true;
-            long filesSize = listFiles.Where(r =>
-                {
-                    return r.Exists();
-                })
+            long filesSize = listFiles.Where(r => r.Exists())
                 .Sum(f => f.Length);
 
             TimeSpan nowBeforeWait = DateTime.Now.TimeOfDay;
             while (filesSize + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
             {
-                HashSet<AppFileFtp> setFilesExist = new HashSet<AppFileFtp>(listFiles.Where(r =>
-                {
-                    return r.Exists();
-                }).ToList());
+                HashSet<AppFileFtp> setFilesExist = new HashSet<AppFileFtp>(listFiles.Where(r => r.Exists()).ToList());
 
                 filesSize = setFilesExist.Sum(f => f.Length);
 
@@ -251,6 +282,32 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                     throw new Exception("Waits too long time for disk space");
                 }
 
+            }
+        }
+
+        protected override void TestFilesNotAlreadyExist(FileInfo source, string target, long chunkSize, bool exceptionIfExists = false)
+        {
+            long nbFiles = (source.Length / chunkSize) + (source.Length % chunkSize == 0 ? 0 : 1);
+            for (long i = 0; i < nbFiles; i++)
+            {
+                Uri tmpFile = FtpUtils.NewFtpUri(FtpUtils.FtpPathCombine(target, "~" + FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i)));
+                if ( FtpUtils.IsFileExists(tmpFile, _ftpCredentials))
+                {
+                    _log.Debug($"File {tmpFile.AbsoluteUri} already exists." );
+                    FtpUtils.DeleteFile(tmpFile, _ftpCredentials);
+                }
+
+                Uri realPartFile = FtpUtils.NewFtpUri(FtpUtils.FtpPathCombine(target, FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i)));
+                if (FtpUtils.IsFileExists(realPartFile, _ftpCredentials))
+                {
+                    if (exceptionIfExists)
+                    {
+                        throw new IOException($"File {realPartFile.AbsoluteUri} already exists.");
+                    }
+
+                    _log.Warn("File {0} already exists.", realPartFile);
+                    FtpUtils.DeleteFile(realPartFile, _ftpCredentials);
+                }
             }
         }
     }

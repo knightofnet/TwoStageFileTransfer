@@ -4,7 +4,7 @@
     {
         
         None,
-        WindowsFolder,
+        Windows,
         FTP
 
     }

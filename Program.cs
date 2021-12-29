@@ -16,6 +16,7 @@ using TwoStageFileTransfer.business.transferworkers.outwork;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using TwoStageFileTransfer.constant;
+using TwoStageFileTransfer.exceptions;
 using static TwoStageFileTransfer.utils.LogUtils;
 using FileUtils = TwoStageFileTransfer.utils.FileUtils;
 using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
@@ -80,7 +81,7 @@ namespace TwoStageFileTransfer
                 string tsftFilePath = null;
                 if (args.Length == 1 && args[0].ToLower().EndsWith(".tsft"))
                 {
-                    appArgs = new AppArgs() { Direction = DirectionTrts.OUT, Source = args[0], TransferType = TransferTypes.WindowsFolder };
+                    appArgs = new AppArgs() { Direction = DirectionTrts.OUT, Source = args[0], TransferType = TransferTypes.Windows };
                     isTsftFile = true;
                     tsftFilePath = args[0];
                     D(_log, "Run with tsft file : Mode OUT");
@@ -146,7 +147,23 @@ namespace TwoStageFileTransfer
                     Uri rootUri = FtpUtils.GetRootUri(uriSource);
                     if (!FtpUtils.IsOkToConnect(rootUri, creds))
                     {
-                        throw new CliParsingException($"Cant connect to {rootUri.AbsoluteUri}");
+                        string msgError = $"Cant connect to '{rootUri.AbsoluteUri}'. ";
+                        if (isTsftFile)
+                        {
+                            if (StringUtils.IsNullOrWhiteSpace(appArgs.TsftFile.TempDir.FtpUsername))
+                            {
+                                msgError +=
+                                    "The Tsft file does not provide any credentials. ";
+                            }
+                            else
+                            {
+                                msgError +=
+                                    "The Tsft file provides credentials, but they did not allow the connection to the remote server. ";
+                            }
+                        }
+
+                        msgError += $"Specify the -{AppArgsParser.OptFtpUser.ShortOpt} and -{AppArgsParser.OptFtpPassword.ShortOpt} parameters to make the connection possible.";
+                        throw new CliParsingException(msgError);
                     }
 
                     if (appArgs.Direction == DirectionTrts.OUT)
@@ -225,27 +242,40 @@ namespace TwoStageFileTransfer
                 switch (appArgs.Direction)
                 {
                     case DirectionTrts.IN:
-                        {
-                            I(_log, "First stage: transfer file from source to temp-shared folder");
+                    {
+                        I(_log, "First stage: transfer file from source to temp-shared folder");
 
-                            StartFirstStage(appArgs);
-                            break;
-                        }
+                        StartFirstStage(appArgs);
+                        break;
+                    }
                     case DirectionTrts.OUT:
-                        {
-                            I(_log, "Second stage: recompose target file from part files from shared folder");
+                    {
+                        I(_log, "Second stage: recompose target file from part files from shared folder");
 
-                            StartSecondStage(appArgs);
-                            break;
-                        }
+                        StartSecondStage(appArgs);
+                        break;
+                    }
                     default:
                         argsParser.ShowSyntax();
                         break;
                 }
             }
+            catch (AppException a)
+            {
+                Console.WriteLine();
+                E(_log, "Error: " + a.Message);
+                E(_log, a.StackTrace, false);
+
+                if (appArgs.IsRunByExplorer())
+                {
+                    Console.Read();
+                }
+
+                Environment.Exit(a.ExitCode.Index);
+            }
             catch (Exception e)
             {
-                E(_log, "", isWriteLog: false);
+                Console.WriteLine();
                 E(_log, "Error: " + e.Message);
                 E(_log, e.StackTrace, false);
 
@@ -269,7 +299,7 @@ namespace TwoStageFileTransfer
         {
            
             long maxTransferLenght = appArgs.ChunkSize;
-            if (appArgs.TransferType == TransferTypes.WindowsFolder)
+            if (appArgs.TransferType == TransferTypes.Windows)
             {
                 maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
                 I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
@@ -282,17 +312,12 @@ namespace TwoStageFileTransfer
 
             InWorkOptions jobOptions = new InWorkOptions()
             {
+                AppArgs = appArgs,
                 MaxSizeUsedOnShared = maxTransferLenght,
-                PartFileSize = appArgs.ChunkSize,
-                Source = new FileInfo(appArgs.Source),
-                Target = appArgs.Target,
-                BufferSize = appArgs.BufferSize,
-                CanOverwrite = appArgs.CanOverwrite,
-                StartPart = appArgs.ResumePart
             };
 
             AbstractInWork w = null;
-            if (appArgs.TransferType == TransferTypes.WindowsFolder)
+            if (appArgs.TransferType == TransferTypes.Windows)
             {
                 w = new InToOutWork(jobOptions);
             }
@@ -326,15 +351,11 @@ namespace TwoStageFileTransfer
         {
             OutWorkOptions jobOptions = new OutWorkOptions()
             {
-                Source = new FileInfo(appArgs.Source),
-                Target = appArgs.Target,
-                BufferSize = appArgs.BufferSize,
-                CanOverwrite = appArgs.CanOverwrite,
-                Tsft = appArgs.TsftFile
+                AppArgs = appArgs,
             };
 
             AbstractOutWork o = null;
-            if (appArgs.TransferType == TransferTypes.WindowsFolder)
+            if (appArgs.TransferType == TransferTypes.Windows)
             {
                 o = new OutToFileWork(jobOptions);
             }

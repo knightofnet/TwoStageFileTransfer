@@ -4,13 +4,14 @@ namespace TwoStageFileTransfer.dto
 {
     class CommonWorkOptions
     {
-        public FileInfo Source { get; internal set; }
-        public string Target { get; internal set; }
+        public AppArgs AppArgs { get; internal set; }
+        public FileInfo Source => new FileInfo(AppArgs.Source);
+        public string Target => AppArgs.Target;
 
-        public int BufferSize { get; internal set; }
+        public int BufferSize => AppArgs.BufferSize;
 
-        public bool CanOverwrite { get; internal set; }
+        public bool CanOverwrite => AppArgs.CanOverwrite;
 
-        public int StartPart { get; set; }
+        public int StartPart => AppArgs.ResumePart;
     }
 }

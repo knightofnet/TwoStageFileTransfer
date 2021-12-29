@@ -8,6 +8,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
+using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
@@ -51,7 +52,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             }
 
             WarnForCompressedTargetDir(InWorkOptions.Target);
-            TestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
+            MainTestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
 
             string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
 
@@ -66,7 +67,12 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                     _totalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
                     fs.Seek(_totalBytesRead, SeekOrigin.Begin);
+                    if (_totalBytesRead > 0)
+                    {
+                        pbar.Report((double)_totalBytesRead / fs.Length, "Resuming");
+                    }
 
+                    bool isFirstFileCreated = true;
                     while (_totalBytesRead < fs.Length)
                     {
 
@@ -74,7 +80,8 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                         DateTime localStart = DateTime.Now;
 
-                        long localBytesRead = WritePartFile(partFileMaxLenght, pbar, fs, fileOutPath, localStart);
+
+                        long localBytesRead = WritePartFile(partFileMaxLenght, pbar, fs, fileOutPath, localStart, 3);
 
                         fileOutPath.File.Attributes = FileAttributes.Hidden | FileAttributes.Archive |
                                                       FileAttributes.Temporary | FileAttributes.NotContentIndexed;
@@ -86,19 +93,21 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                             WaitForFreeSpace(listFiles);
                         }
 
-                        if (fileCreatedIndex == 0)
+                        if (isFirstFileCreated)
                         {
                             string tsftFileContent = WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
                                 partFileMaxLenght, sha1);
                             if (tsftFileContent != null)
                             {
-                                InWorkOptions.TsftFile = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
-                                File.WriteAllText(InWorkOptions.TsftFile, tsftFileContent, Encoding.UTF8);
+                                InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
+                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftFileContent, Encoding.UTF8);
                             }
+
                         }
 
                         LastPartDone = fileCreatedIndex;
                         fileCreatedIndex++;
+                        isFirstFileCreated = false;
                     }
                 }
             }
@@ -106,9 +115,36 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
+            Console.Title = "";
         }
 
+        private long WritePartFile(long partFileMaxLenght, ProgressBar pbar, FileStream fs, AppFile fileOutPath, DateTime localStart, int nbTentative)
+        {
+           
+            while (nbTentative > 0)
+            {
+                try
+                {
+                    return WritePartFile(partFileMaxLenght, pbar, fs, fileOutPath, localStart);
+                   
+                }
+                catch (Exception e)
+                {
+                    nbTentative--;
+                    if (nbTentative <= 0)
+                    {
+                        throw new AppException("Error while writing part file", e, EnumExitCodes.KO_WRITING_PARTFILE);
+                    }
 
+                    _log.Info("Error while writing part file. Re-try in 30s");
+                    Thread.Sleep(30 * 1000);
+                    pbar.Report((double)_totalBytesRead / fs.Length, "Retry");
+
+                }
+
+            }
+            return 0;
+        }
 
         private long WritePartFile(long chunk, ProgressBar pbar, FileStream fs, AppFile fileOutPath, DateTime localStart)
         {
@@ -144,7 +180,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                 }
 
-                pbar.Report((double)_totalBytesRead / fs.Length, GetTransferSpeed(localBytesRead, localStart));
+                pbar.Report((double)_totalBytesRead / fs.Length, AppUtils.GetTransferSpeed(localBytesRead, localStart));
 
                 fileOutPath.MoveToNormal();
             }
@@ -155,13 +191,13 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                     fileOutPath.TempFile.Delete();
                     
                 }
-                throw ex;
+                throw  ex;
             }
 
             return localBytesRead;
         }
 
-        private void TestFilesNotAlreadyExist(FileInfo source, string target, long chunkSize, bool exceptionIfExists = false)
+        protected override void TestFilesNotAlreadyExist(FileInfo source, string target, long chunkSize, bool exceptionIfExists = false)
         {
             long nbFiles = (source.Length / chunkSize) + (source.Length % chunkSize == 0 ? 0 : 1);
             for (long i = 0; i < nbFiles; i++)
@@ -220,13 +256,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             }
         }
 
-        private static string GetTransferSpeed(long localBytesRead, DateTime timeStart)
-        {
-            long diffTime = (long)(DateTime.Now - timeStart).TotalSeconds;
-            if (diffTime == 0) return string.Empty;
 
-            return "~" + AFileUtils.HumanReadableSize(localBytesRead / diffTime) + "/s [last part]";
-        }
 
         private void WaitForFreeSpace(HashSet<FileInfo> listFiles)
         {

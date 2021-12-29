@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Data;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
+using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
 
 namespace TwoStageFileTransfer.business.transferworkers.outwork
@@ -33,8 +35,6 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             if (Options.Tsft != null)
             {
-
-
                 totalBytesToRead = Options.Tsft.FileLenght;
                 finalFileName = Options.Tsft.Source.OriginalFilename;
                 sha1FinalFile = Options.Tsft.Sha1Hash;
@@ -69,12 +69,8 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             FileInfo targetFile = new FileInfo(Path.Combine(Options.Target, "~" + finalFileName));
             FileInfo rTargetFile = new FileInfo(Path.Combine(Options.Target, finalFileName));
-            if (rTargetFile.Exists)
-            {
-                _log.Warn("{0} already exists : delete");
-                rTargetFile.Delete();
-                rTargetFile.Refresh();
-            }
+            TestFileAlreadyExists(rTargetFile);
+
 
             Console.Write("Recomposing file... ");
             DateTime mainStart = DateTime.Now;
@@ -85,6 +81,8 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
                 FileInfo currentFileToRead = _firstFile;
 
+                byte[] buffer = new byte[Options.BufferSize];
+
                 while (totalBytesRead < totalBytesToRead)
                 {
 
@@ -92,21 +90,24 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     while (!currentFileToRead.Exists || AryxDevLibrary.utils.FileUtils.IsFileLocked(currentFileToRead))
                     {
                         fo.Flush();
-                        Console.Title = string.Format("TSFT - Out - Waiting for {0}", currentFileToRead.FullName);
+                        Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.FullName}";
+                        pbar.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
                         Thread.Sleep(300);
                         currentFileToRead.Refresh();
 
                         if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
                         {
-                            throw new Exception(string.Format("Waits too long time for {0}", currentFileToRead.FullName));
+                            throw new Exception($"Waits too long time for {currentFileToRead.FullName}");
                         }
                     }
 
                     string msg = "Reading file " + currentFileToRead.Name;
-                    Console.Title = string.Format("TSFT - Out - {0}", msg);
+                    Console.Title = $"TSFT - Out - {msg}";
                     _log.Debug(msg);
 
-                    byte[] buffer = new byte[Options.BufferSize];
+                    DateTime localStart = DateTime.Now;
+                    long localBytesRead = 0;
+
                     using (FileStream fr = new FileStream(currentFileToRead.FullName, FileMode.Open))
                     {
 
@@ -116,18 +117,23 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                         while ((bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
                         {
                             totalBytesRead += bytesRead;
+                            localBytesRead += bytesRead;
                             fo.Write(buffer, 0, bytesRead);
+                            pbar.Report((double)totalBytesRead / totalBytesToRead, AppUtils.GetTransferSpeed(localBytesRead, localStart));
                         }
-                        pbar.Report((double)totalBytesRead / totalBytesToRead, "");
+                        
 
                     }
 
                     _log.Debug("> OK");
-                    currentFileToRead.Delete();
-                    _log.Debug("> File part deleted");
+                    if (!Options.KeepPartFiles)
+                    {
+                        currentFileToRead.Delete();
+                        _log.Debug("> File part deleted");
+                    }
+
 
                     currentFileToRead = new FileInfo(Path.Combine(sourceDir, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++)));
-
                 }
 
             }

@@ -2,6 +2,8 @@
 {
     class OutWorkOptions : CommonWorkOptions
     {
-        public TsftFile Tsft { get; set; }
+        public TsftFile Tsft => AppArgs.TsftFile;
+
+        public bool KeepPartFiles => AppArgs.KeepPartFiles;
     }
 }

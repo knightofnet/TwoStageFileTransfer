@@ -4,8 +4,10 @@
     {
         public long MaxSizeUsedOnShared { get; set; }
 
-        public long PartFileSize { get; set; }
-        public string TsftFile { get; set; }
+        public long PartFileSize => AppArgs.ChunkSize;
+
+
+        public string TsftFilePath { get; set; }
         
     }
 }

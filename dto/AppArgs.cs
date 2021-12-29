@@ -20,7 +20,8 @@ namespace TwoStageFileTransfer.dto
         public string FtpPassword { get; set; }
         public TsftFile TsftFile { get; set; }
         public int ResumePart { get; set; }
-
+        public bool IncludeCredsInTsft { get; set; }
+        public bool KeepPartFiles { get; internal set; }
 
         public AppArgs()
         {
