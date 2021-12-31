@@ -58,7 +58,7 @@ namespace TwoStageFileTransfer.dto
             public string FtpPassword { get; set; }
 
             [XmlIgnore]
-            public Uri FtpPath => Path != null ? FtpUtils.NewFtpUri(Path) : null;
+            public Uri FtpPath => Path != null ? UriUtils.NewFtpUri(Path) : null;
 
             public long AwaitedParts { get; set; }
         }

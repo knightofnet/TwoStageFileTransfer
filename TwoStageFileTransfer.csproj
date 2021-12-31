@@ -48,6 +48,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\AryxDevLibrary\AryxDevLibrary4.0\bin\Debug\AryxDevLibrary.dll</HintPath>
     </Reference>
+    <Reference Include="Renci.SshNet, Version=2020.0.1.0, Culture=neutral, PublicKeyToken=1cee9f8bde3db106, processorArchitecture=MSIL">
+      <HintPath>packages\SSH.NET.2020.0.1\lib\net40\Renci.SshNet.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.IO.Compression" />
@@ -69,6 +72,9 @@
     <Compile Include="business\AbstractWork.cs" />
     <Compile Include="business\AppArgsParser.cs" />
     <Compile Include="business\AppLogger.cs" />
+    <Compile Include="business\connexions\FtpConnexion.cs" />
+    <Compile Include="business\connexions\IConnexion.cs" />
+    <Compile Include="business\connexions\SshConnexion.cs" />
     <Compile Include="business\transferworkers\AbstractInWork.cs" />
     <Compile Include="business\transferworkers\AbstractOutWork.cs" />
     <Compile Include="business\transferworkers\inwork\FtpInWork.cs" />
@@ -76,6 +82,7 @@
     <Compile Include="business\moderuns\AbstractModeRun.cs" />
     <Compile Include="business\moderuns\CmdRun.cs" />
     <Compile Include="business\moderuns\ExplorerRun.cs" />
+    <Compile Include="business\transferworkers\inwork\SftpInWork.cs" />
     <Compile Include="business\transferworkers\outwork\FtpOutWork.cs" />
     <Compile Include="business\transferworkers\outwork\OutToFileWork.cs" />
     <Compile Include="business\TsftFileCreator.cs" />

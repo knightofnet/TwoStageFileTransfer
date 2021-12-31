@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using AryxDevLibrary.utils;
+using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
@@ -17,13 +18,13 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
         private long _totalBytesRead ;
         private byte[] _buffer;
 
-        private  NetworkCredential _ftpCredentials;
+        private  IConnexion _ftpCredentials;
 
         private AppFileFtp _firstFile ;
 
         public FtpOutWork(NetworkCredential networkCredential, OutWorkOptions outWorkOptions) : base(outWorkOptions)
         {
-            _ftpCredentials = networkCredential;
+            //_ftpCredentials = networkCredential;
         }
 
 
@@ -49,14 +50,14 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                         Options.Tsft.TempDir.FtpPassword);
                 }
 
-                Uri serverHost = FtpUtils.GetRootUri(FtpUtils.NewFtpUri(Options.Tsft.TempDir.Path));
+                Uri serverHost = FtpUtils.GetRootUri(UriUtils.NewFtpUri(Options.Tsft.TempDir.Path));
                 if (!FtpUtils.IsOkToConnect(serverHost, _ftpCredentials))
                 {
                     throw new Exception($"Unable to established a connexion to ${serverHost.AbsoluteUri}");
                 }
                 */
 
-                _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0), _ftpCredentials);
+                _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0));
             }
             else
             {
@@ -80,14 +81,15 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
                 AppFileFtp currentFileToRead = _firstFile;
 
-                FtpUtils.LogListDir(currentFileToRead.DirectoryParent, _ftpCredentials);
+
+                // TODO FtpUtils.LogListDir(currentFileToRead.DirectoryParent, _ftpCredentials);
                 byte[] buffer = new byte[Options.BufferSize];
 
                 while (totalBytesRead < totalBytesToRead)
                 {
 
                     TimeSpan nowBeforeWait = DateTime.Now.TimeOfDay;
-                    while (!currentFileToRead.Exists() )
+                    while (!currentFileToRead.Exists(_ftpCredentials) )
                     {
                         fo.Flush();
                         Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}";
@@ -106,7 +108,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
                     FtpWebRequest request = (FtpWebRequest)WebRequest.Create(currentFileToRead.File);
                     request.Method = WebRequestMethods.Ftp.DownloadFile;
-                    request.Credentials = _ftpCredentials;
+                    request.Credentials = _ftpCredentials.Credentials;
                     request.KeepAlive = true;
                     request.UsePassive = true;
                     request.UseBinary = true;
@@ -134,11 +136,12 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     _log.Debug("> OK");
                     if (!Options.KeepPartFiles)
                     {
-                        currentFileToRead.Delete();
+                        
+                        currentFileToRead.Delete(_ftpCredentials);
                         _log.Debug("> File part deleted");
                     }
 
-                    currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++), _ftpCredentials);
+                    currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++));
 
                 }
 

@@ -6,9 +6,11 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Xml.Serialization;
+using AryxDevLibrary.extensions;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.cliParser;
 using TwoStageFileTransfer.business;
+using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.business.moderuns;
 using TwoStageFileTransfer.business.transferworkers;
 using TwoStageFileTransfer.business.transferworkers.inwork;
@@ -144,7 +146,7 @@ namespace TwoStageFileTransfer
 
 
                     NetworkCredential creds = new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword);
-                    Uri rootUri = FtpUtils.GetRootUri(uriSource);
+                    Uri rootUri = UriUtils.GetRootUri(uriSource);
                     if (!FtpUtils.IsOkToConnect(rootUri, creds))
                     {
                         string msgError = $"Cant connect to '{rootUri.AbsoluteUri}'. ";
@@ -323,9 +325,10 @@ namespace TwoStageFileTransfer
             }
             else if (appArgs.TransferType == TransferTypes.FTP)
             {
+                FtpConnexion connexion = new FtpConnexion(new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword),
+                    UriUtils.NewFtpUri(appArgs.Target).GetRootUri());
                 w =
-                    new FtpInWork(new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword),
-                        jobOptions);
+                    new FtpInWork(connexion, jobOptions);
             }
 
             try

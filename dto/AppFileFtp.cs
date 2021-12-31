@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using AryxDevLibrary.utils;
+using TwoStageFileTransfer.business.connexions;
 
 namespace TwoStageFileTransfer.dto
 {
@@ -13,37 +14,37 @@ namespace TwoStageFileTransfer.dto
         public Uri DirectoryParent { get; }
         public long Length { get; internal set; }
 
-        private readonly ICredentials credentials;
+        
 
 
-        public AppFileFtp(string parent, string filename, ICredentials credentials)
+        public AppFileFtp(string parent, string filename)
         {
-            File = FtpUtils.NewFtpUri(FtpUtils.FtpPathCombine(parent, filename));
-            FileTemp = FtpUtils.NewFtpUri(FtpUtils.FtpPathCombine(parent, "~" + filename));
+            File = UriUtils.NewFtpUri(FtpUtils.FtpPathCombine(parent, filename));
+            FileTemp = UriUtils.NewFtpUri(FtpUtils.FtpPathCombine(parent, "~" + filename));
 
-            DirectoryParent = FtpUtils.NewFtpUri(parent);
+            DirectoryParent = UriUtils.NewFtpUri(parent);
 
-            this.credentials = credentials;
+            
 
         }
 
-        public bool Exists()
+        public bool Exists(IConnexion connexion)
         {
-            return FtpUtils.IsFileExists(File, credentials);
+            return connexion.IsFileExists(File.AbsoluteUri);
         }
 
 
-        public void MoveToNormal()
+        public void MoveToNormal(IConnexion connexion)
         {
-            if (!FtpUtils.RenameFile(FileTemp, File.Segments[File.Segments.Length - 1], credentials))
+            if (!connexion.RenameFile(FileTemp.AbsolutePath, File.Segments[File.Segments.Length - 1]))
             {
                 throw new Exception("Error when renaming file on FTP");
             }
         }
 
-        public void Delete()
+        public void Delete(IConnexion connexion)
         {
-            if (!FtpUtils.DeleteFile(File, credentials))
+            if (!connexion.DeleteFile(File.AbsolutePath))
             {
                 throw new Exception("Error when deleting file on FTP");
             }
