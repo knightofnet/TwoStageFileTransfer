@@ -21,5 +21,10 @@ namespace TwoStageFileTransfer.utils
 
             return "~" + AryxDevLibrary.utils.FileUtils.HumanReadableSize(localBytesRead / diffTime) + "/s [last part]";
         }
+
+        public static Uri ToUri(this string str)
+        {
+            return new Uri(str);
+        }
     }
 }

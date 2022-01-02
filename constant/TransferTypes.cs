@@ -5,7 +5,7 @@
         
         None,
         Windows,
-        FTP
-
+        FTP,
+        SFTP
     }
 }

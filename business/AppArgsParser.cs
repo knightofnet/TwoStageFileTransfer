@@ -210,14 +210,14 @@ namespace TwoStageFileTransfer.business
 
 
             // Username and password for FTP
-            if (retArgs.TransferType == TransferTypes.FTP &&
-                (HasOption(OptFtpUser, arg) || HasOption(OptFtpPassword, arg))
+            if (retArgs.IsRemoteTransfertType && (HasOption(OptFtpUser, arg) || HasOption(OptFtpPassword, arg))
             )
             {
                 if (HasOption(OptFtpUser, arg))
                 {
                     retArgs.FtpUser = GetSingleOptionValue(OptFtpUser, arg);
                     StrCommand.AppendFormat("-{0} {1} ", OptFtpUser.ShortOpt, retArgs.FtpUser);
+                    retArgs.CredentialsOrigin = CredentialOrigins.InputParameters;
                 }
 
                 if (HasOption(OptFtpPassword, arg))
@@ -250,13 +250,12 @@ namespace TwoStageFileTransfer.business
                     }
                     retArgs.Source = Path.GetFullPath(retArgs.Source);
                 }
-                else if (retArgs.Direction == DirectionTrts.OUT && retArgs.TransferType == TransferTypes.FTP)
+                else if (retArgs.Direction == DirectionTrts.OUT && retArgs.IsRemoteTransfertType)
                 {
                     if (FileUtils.IsValidFilepath(retArgs.Source) && !retArgs.Source.ToLower().EndsWith(".tsft"))
                     {
                         throw new CliParsingException($"If source is a file, it must be a valid tsft file.");
                     }
-
 
                 }
 
@@ -276,10 +275,8 @@ namespace TwoStageFileTransfer.business
                     retArgs.Target = Path.GetFullPath(retArgs.Target);
 
                 }
-                else if (retArgs.Direction == DirectionTrts.IN && retArgs.TransferType == TransferTypes.FTP)
+                else if (retArgs.Direction == DirectionTrts.IN && retArgs.IsRemoteTransfertType)
                 {
-
-
 
                 }
 
@@ -352,7 +349,7 @@ namespace TwoStageFileTransfer.business
             }
 
 
-            
+
 
 
 

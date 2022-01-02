@@ -15,6 +15,8 @@ namespace TwoStageFileTransfer.dto
         public bool CanOverwrite { get; set; }
         public SourceRuns SourceRun { get; set; }
         public TransferTypes TransferType { get; set; }
+
+        public bool IsRemoteTransfertType => TransferType == TransferTypes.FTP || TransferType == TransferTypes.SFTP;
         public string FtpUser { get; set; }
 
         public string FtpPassword { get; set; }
@@ -22,11 +24,14 @@ namespace TwoStageFileTransfer.dto
         public int ResumePart { get; set; }
         public bool IncludeCredsInTsft { get; set; }
         public bool KeepPartFiles { get; internal set; }
+        public CredentialOrigins CredentialsOrigin { get; set; }
+        public string RemoteHost { get; internal set; }
+        public int RemotePort { get; internal set; }
 
         public AppArgs()
         {
             BufferSize = AppCst.BufferSize;
-            
+
         }
 
         public bool IsRunByCmd()
@@ -36,9 +41,12 @@ namespace TwoStageFileTransfer.dto
 
         public bool IsRunByExplorer()
         {
-            return SourceRun == SourceRuns.Explorer; 
+            return SourceRun == SourceRuns.Explorer;
         }
 
         
+
+
+
     }
 }

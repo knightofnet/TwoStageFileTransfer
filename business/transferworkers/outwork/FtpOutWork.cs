@@ -15,16 +15,16 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 {
     class FtpOutWork : AbstractOutWork
     {
-        private long _totalBytesRead ;
-        private byte[] _buffer;
+        protected long TotalBytesRead ;
+        protected byte[] Buffer;
 
-        private  IConnexion _ftpCredentials;
+        protected  IConnexion Connexion;
 
         private AppFileFtp _firstFile ;
 
-        public FtpOutWork(NetworkCredential networkCredential, OutWorkOptions outWorkOptions) : base(outWorkOptions)
+        public FtpOutWork(IConnexion connexion, OutWorkOptions outWorkOptions) : base(outWorkOptions)
         {
-            //_ftpCredentials = networkCredential;
+            Connexion = connexion;
         }
 
 
@@ -44,14 +44,14 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 sha1FinalFile = Options.Tsft.Sha1Hash;
 
                 /*
-                if (String.IsNullOrWhiteSpace(_ftpCredentials.UserName))
+                if (String.IsNullOrWhiteSpace(Connexion.UserName))
                 {
-                    _ftpCredentials = new NetworkCredential(Options.Tsft.TempDir.FtpUsername,
+                    Connexion = new NetworkCredential(Options.Tsft.TempDir.FtpUsername,
                         Options.Tsft.TempDir.FtpPassword);
                 }
 
                 Uri serverHost = FtpUtils.GetRootUri(UriUtils.NewFtpUri(Options.Tsft.TempDir.Path));
-                if (!FtpUtils.IsOkToConnect(serverHost, _ftpCredentials))
+                if (!FtpUtils.IsOkToConnect(serverHost, Connexion))
                 {
                     throw new Exception($"Unable to established a connexion to ${serverHost.AbsoluteUri}");
                 }
@@ -82,18 +82,18 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 AppFileFtp currentFileToRead = _firstFile;
 
 
-                // TODO FtpUtils.LogListDir(currentFileToRead.DirectoryParent, _ftpCredentials);
-                byte[] buffer = new byte[Options.BufferSize];
+                // TODO FtpUtils.LogListDir(currentFileToRead.DirectoryParent, Connexion);
+                Buffer = new byte[Options.BufferSize];
 
                 while (totalBytesRead < totalBytesToRead)
                 {
 
                     TimeSpan nowBeforeWait = DateTime.Now.TimeOfDay;
-                    while (!currentFileToRead.Exists(_ftpCredentials) )
+                    while (!currentFileToRead.Exists(Connexion) )
                     {
                         fo.Flush();
                         Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}";
-                        pbar.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
+                        pbar.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i - 1}");
                         Thread.Sleep(300);
 
                         if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
@@ -102,44 +102,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                         }
                     }
 
-                    string msg = "Reading file " + currentFileToRead.File.Segments.Last();
-                    Console.Title = $"TSFT - Out - {msg}";
-                    _log.Debug(msg);
-
-                    FtpWebRequest request = (FtpWebRequest)WebRequest.Create(currentFileToRead.File);
-                    request.Method = WebRequestMethods.Ftp.DownloadFile;
-                    request.Credentials = _ftpCredentials.Credentials;
-                    request.KeepAlive = true;
-                    request.UsePassive = true;
-                    request.UseBinary = true;
-
-                    DateTime localStart = DateTime.Now;
-                    long localBytesRead = 0;
-                   
-                    using (Stream fr = request.GetResponse().GetResponseStream())
-                    {
-                        
-                        Array.Clear(buffer, 0, buffer.Length);
-                        int bytesRead;
-
-                        while (fr != null && (bytesRead = fr.Read(buffer, 0, buffer.Length)) > 0)
-                        {
-                            totalBytesRead += bytesRead;
-                            localBytesRead += bytesRead;
-                            fo.Write(buffer, 0, bytesRead);
-                            pbar.Report((double)totalBytesRead / totalBytesToRead, AppUtils.GetTransferSpeed(localBytesRead, localStart));
-                        }
-                       
-
-                    }
-
-                    _log.Debug("> OK");
-                    if (!Options.KeepPartFiles)
-                    {
-                        
-                        currentFileToRead.Delete(_ftpCredentials);
-                        _log.Debug("> File part deleted");
-                    }
+                    totalBytesRead = ReadPartFile(currentFileToRead, totalBytesRead, fo, pbar, totalBytesToRead);
 
                     currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++));
 
@@ -163,6 +126,46 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
           
         }
 
+        protected virtual long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, ProgressBar pbar, long totalBytesToRead)
+        {
+            string msg = "Reading file " + currentFileToRead.File.Segments.Last();
+            Console.Title = $"TSFT - Out - {msg}";
+            _log.Debug(msg);
+
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(currentFileToRead.File);
+            request.Method = WebRequestMethods.Ftp.DownloadFile;
+            request.Credentials = Connexion.Credentials;
+            request.KeepAlive = true;
+            request.UsePassive = true;
+            request.UseBinary = true;
+
+            DateTime localStart = DateTime.Now;
+            long localBytesRead = 0;
+
+            using (Stream fr = request.GetResponse().GetResponseStream())
+            {
+                Array.Clear(Buffer, 0, Buffer.Length);
+                int bytesRead;
+
+                while (fr != null && (bytesRead = fr.Read(Buffer, 0, Buffer.Length)) > 0)
+                {
+                    totalBytesRead += bytesRead;
+                    localBytesRead += bytesRead;
+                    fo.Write(Buffer, 0, bytesRead);
+                    pbar.Report((double)totalBytesRead / totalBytesToRead,
+                        AppUtils.GetTransferSpeed(localBytesRead, localStart));
+                }
+            }
+
+            _log.Debug("> OK");
+            if (!Options.KeepPartFiles)
+            {
+                currentFileToRead.Delete(Connexion);
+                _log.Debug("> File part deleted");
+            }
+
+            return totalBytesRead;
+        }
 
 
         private static FileInfo FindFirstFileSourceDir(FileInfo source)

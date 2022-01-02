@@ -2,6 +2,7 @@
 using System.Net;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.business.connexions;
+using TwoStageFileTransfer.utils;
 
 namespace TwoStageFileTransfer.dto
 {
@@ -19,18 +20,22 @@ namespace TwoStageFileTransfer.dto
 
         public AppFileFtp(string parent, string filename)
         {
-            File = UriUtils.NewFtpUri(FtpUtils.FtpPathCombine(parent, filename));
-            FileTemp = UriUtils.NewFtpUri(FtpUtils.FtpPathCombine(parent, "~" + filename));
+            File = FtpUtils.FtpPathCombine(parent, filename).ToUri();
+            FileTemp = FtpUtils.FtpPathCombine(parent, "~" + filename).ToUri();
 
-            DirectoryParent = UriUtils.NewFtpUri(parent);
+            DirectoryParent = parent.ToUri();
 
             
 
         }
 
-        public bool Exists(IConnexion connexion)
+        public bool Exists(IConnexion connexion, bool isTempFileToCheck = false)
         {
-            return connexion.IsFileExists(File.AbsoluteUri);
+            if (isTempFileToCheck)
+            {
+                return connexion.IsFileExists(FileTemp);
+            }
+            return connexion.IsFileExists(File);
         }
 
 
@@ -42,9 +47,15 @@ namespace TwoStageFileTransfer.dto
             }
         }
 
-        public void Delete(IConnexion connexion)
+        public void Delete(IConnexion connexion, bool isTempFileToDelete = false)
         {
-            if (!connexion.DeleteFile(File.AbsolutePath))
+            Uri fileUri = File;
+            if (isTempFileToDelete)
+            {
+                fileUri = FileTemp;
+            }
+
+            if (!connexion.DeleteFile(fileUri))
             {
                 throw new Exception("Error when deleting file on FTP");
             }

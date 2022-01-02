@@ -72,6 +72,7 @@
     <Compile Include="business\AbstractWork.cs" />
     <Compile Include="business\AppArgsParser.cs" />
     <Compile Include="business\AppLogger.cs" />
+    <Compile Include="business\AppParamatersReader.cs" />
     <Compile Include="business\connexions\FtpConnexion.cs" />
     <Compile Include="business\connexions\IConnexion.cs" />
     <Compile Include="business\connexions\SshConnexion.cs" />
@@ -85,8 +86,10 @@
     <Compile Include="business\transferworkers\inwork\SftpInWork.cs" />
     <Compile Include="business\transferworkers\outwork\FtpOutWork.cs" />
     <Compile Include="business\transferworkers\outwork\OutToFileWork.cs" />
+    <Compile Include="business\transferworkers\outwork\SftpOutWork.cs" />
     <Compile Include="business\TsftFileCreator.cs" />
     <Compile Include="constant\AppCst.cs" />
+    <Compile Include="constant\CredentialOrigins.cs" />
     <Compile Include="constant\DirectionTrts.cs" />
     <Compile Include="constant\EnumExitCodes.cs" />
     <Compile Include="constant\SourceRuns.cs" />

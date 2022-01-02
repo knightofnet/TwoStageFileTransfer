@@ -29,8 +29,10 @@ namespace TwoStageFileTransfer.business.transferworkers
         protected abstract void TestFilesNotAlreadyExist(FileInfo source, string target, long chunkSize,
             bool exceptionIfExists = false);
 
+        protected abstract void IncludeMoreThingsInTsftFile(TsftFile tsftFile);
 
-        protected string WriteTransferExchangeFile(string sourceName, long sourceLength, long partFileMaxLenght,
+
+        protected string GetTransferExchangeFileContent(string sourceName, long sourceLength, long partFileMaxLenght,
             string sha1, Action<TsftFile> moreActionOnTsft = null)
         {
             try

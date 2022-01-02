@@ -2,6 +2,7 @@
 using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
+using TwoStageFileTransfer.utils;
 
 namespace TwoStageFileTransfer.dto
 {
@@ -58,9 +59,11 @@ namespace TwoStageFileTransfer.dto
             public string FtpPassword { get; set; }
 
             [XmlIgnore]
-            public Uri FtpPath => Path != null ? UriUtils.NewFtpUri(Path) : null;
+            public Uri FtpPath => Path?.ToUri();
 
             public long AwaitedParts { get; set; }
+            public string RemoteHost { get; set; }
+            public int RemotePort { get; set; }
         }
 
         /*

@@ -95,7 +95,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                         if (isFirstFileCreated)
                         {
-                            string tsftFileContent = WriteTransferExchangeFile(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
+                            string tsftFileContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
                                 partFileMaxLenght, sha1);
                             if (tsftFileContent != null)
                             {
@@ -224,6 +224,11 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             }
         }
 
+        protected override void IncludeMoreThingsInTsftFile(TsftFile tsftFile)
+        {
+            // Nothing to add here;
+        }
+
         private void WarnForCompressedTargetDir(string target)
         {
             DirectoryInfo targetDir = new DirectoryInfo(target);
@@ -299,7 +304,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
         }
 
         /*
-        private void WriteTransferExchangeFile(string originalFileName, long originalFileSize, string sha1)
+        private void GetTransferExchangeFileContent(string originalFileName, long originalFileSize, string sha1)
         {
             StringBuilder s = new StringBuilder();
             s.AppendLine(originalFileName);
