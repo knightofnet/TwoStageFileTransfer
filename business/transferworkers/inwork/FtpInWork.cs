@@ -60,6 +60,8 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
 
             string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
+            _log.Info( $"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
+            ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
 
 
             Console.Write("Creating part files... ");
@@ -101,17 +103,12 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                         if (isFirstFileCreated)
                         {
 
-                            string tsftContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length, partFileMaxLenght, sha1,
-                                file =>
-                                {
-                                   
-                                    IncludeMoreThingsInTsftFile(file);
-
-                                });
+                            TsftFileSecured tsftContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length, partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase,
+                                IncludeMoreThingsInTsftFile);
                             if (tsftContent != null)
                             {
                                 InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Source.Directory.FullName, InWorkOptions.Source.Name + ".tsft");
-                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftContent, Encoding.UTF8);
+                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftContent.SecureContent, Encoding.UTF8);
 
                                 Connexion.UploadFileToServer(fileFtp.DirectoryParent.AbsolutePath,
                                     new FileInfo(InWorkOptions.TsftFilePath));

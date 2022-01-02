@@ -2,6 +2,7 @@
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
+using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
@@ -32,8 +33,8 @@ namespace TwoStageFileTransfer.business.transferworkers
         protected abstract void IncludeMoreThingsInTsftFile(TsftFile tsftFile);
 
 
-        protected string GetTransferExchangeFileContent(string sourceName, long sourceLength, long partFileMaxLenght,
-            string sha1, Action<TsftFile> moreActionOnTsft = null)
+        protected TsftFileSecured GetTransferExchangeFileContent(string sourceName, long sourceLength, long partFileMaxLenght,
+            string sha1, string inPassphrase = null,  Action<TsftFile> moreActionOnTsft = null)
         {
             try
             {
@@ -64,7 +65,9 @@ namespace TwoStageFileTransfer.business.transferworkers
                     }
                 }
 
-                return StringCipher.Encrypt(xml, "test");
+                string passPhrase = inPassphrase ;
+                return new TsftFileSecured()
+                    { PassPhrase = passPhrase, SecureContent = StringCipher.Encrypt(xml, passPhrase) };
             }
             catch (Exception ex)
             {

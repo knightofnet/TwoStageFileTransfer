@@ -141,6 +141,29 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false
         };
 
+        internal static readonly Option OptTsftFilePassPhrase = new Option()
+        {
+            ShortOpt = "ph",
+            LongOpt = "passphrase",
+            Description = "a",
+            HasArgs = true,
+            Name = "_optTsftFilePassPhrase",
+            IsMandatory = false,
+            IsHiddenInHelp = false
+        };
+
+        internal static readonly Option OptTsftPassPhraseNone = new Option()
+        {
+            ShortOpt = "pn",
+            LongOpt = "passphrase-none",
+            Description = "a",
+            HasArgs = false,
+            Name = "_optTsftFilePassPhraseNone",
+            IsMandatory = false,
+            IsHiddenInHelp = false
+        };
+
+        
 
         internal static readonly Option OptReprise = new Option()
         {
@@ -152,6 +175,10 @@ namespace TwoStageFileTransfer.business
             IsMandatory = false,
             IsHiddenInHelp = true
         };
+
+ 
+
+        
 
         public AppArgsParser()
         {
@@ -173,7 +200,13 @@ namespace TwoStageFileTransfer.business
             AddOption(OptFtpUser);
             AddOption(OptFtpPassword);
 
+
+
             AddOption(OptIncludeCredsInTsftFile);
+
+            AddOption(OptTsftFilePassPhrase);
+            AddOption(OptTsftPassPhraseNone);
+
 
         }
 
@@ -260,7 +293,7 @@ namespace TwoStageFileTransfer.business
                 }
 
 
-                StrCommand.AppendFormat("-{0} {1} ", OptSource.ShortOpt, retArgs.Source);
+                StrCommand.AppendFormat("-{0} \"{1}\" ", OptSource.ShortOpt, retArgs.Source);
             }
 
 
@@ -280,7 +313,7 @@ namespace TwoStageFileTransfer.business
 
                 }
 
-                StrCommand.AppendFormat("-{0} {1} ", OptTarget.ShortOpt, retArgs.Target);
+                StrCommand.AppendFormat("-{0} \"{1}\" ", OptTarget.ShortOpt, retArgs.Target);
             }
 
 
@@ -348,9 +381,26 @@ namespace TwoStageFileTransfer.business
                 StrCommand.AppendFormat("-{0} ", OptKeepPartFiles.ShortOpt);
             }
 
+            if (HasOption(OptTsftFilePassPhrase, arg) && HasOption(OptTsftPassPhraseNone, arg))
+            {
+                throw new CliParsingException($"-{OptTsftFilePassPhrase.ShortOpt} and -{OptTsftPassPhraseNone.ShortOpt} cannot " +
+                                              $"be used at the same time. Also, -{OptTsftPassPhraseNone.ShortOpt} only works with " +
+                                              $"the \"{TransferTypes.Windows}\" transfer type.");
+            }
 
+            // OptTsftFilePassPhrase
+            if (HasOption(OptTsftFilePassPhrase, arg))
+            {
+                retArgs.TsftPassphrase = GetSingleOptionValue(OptTsftFilePassPhrase, arg);
+                StrCommand.AppendFormat("-{0} {1} ", OptTsftFilePassPhrase.ShortOpt, retArgs.TsftPassphrase);
+            }
 
-
+            // OptTsftPassPhraseNone
+            if (HasOption(OptTsftPassPhraseNone, arg))
+            {
+                retArgs.TsftPassphrase = AppCst.DefaultPassPhrase;
+                StrCommand.AppendFormat("-{0} ", OptTsftPassPhraseNone.ShortOpt);
+            }
 
 
             if (HasOption(OptReprise, arg))

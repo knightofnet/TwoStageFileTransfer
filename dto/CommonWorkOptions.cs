@@ -13,5 +13,7 @@ namespace TwoStageFileTransfer.dto
         public bool CanOverwrite => AppArgs.CanOverwrite;
 
         public int StartPart => AppArgs.ResumePart;
+
+        public string TsftPassphrase => AppArgs.TsftPassphrase;
     }
 }

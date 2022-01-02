@@ -265,14 +265,12 @@ namespace TwoStageFileTransfer.business.connexions
 
             void CallBackAction(ulong obj)
             {
-
                 uploadCallback?.Invoke(obj);
-                if (DateTime.Now > dtT)
-                {
-                    _log.Debug($"Transfered {obj}");
-                    dtT = dtT.AddSeconds(10);
-                    _log.Debug($" >> {dtT}");
-                }
+                if (DateTime.Now <= dtT) return;
+
+                _log.Debug($"Transfered {obj}");
+                dtT = dtT.AddSeconds(10);
+                _log.Debug($" >> {dtT}");
             }
 
             object objState = "null";
@@ -299,6 +297,20 @@ namespace TwoStageFileTransfer.business.connexions
 
         public void UploadStreamToServer(Stream stream, string fileAbsolutePath, bool canOverride = false, Action<ulong> uploadCallback = null)
         {
+            /*
+             * To upload a file to the server, the implementation below is used instead of the synchronous method ScpClient::UploadFile(...).
+             * The synchronous method works very well, but has a flaw: if the server is full, the method never stops, even after the connection
+             * timeout.
+             *
+             * So here the upload is started aynchronously.Then, in a loop, we wait for 1 second that the sending works or that the timeout
+             * (of 10 seconds) has expired. At each turn of the loop, we redefine the current time. In the upload progress callback (which is
+             * called when the upload is actually working, but not when it freezes), we increase the target time of the timeout. If the upload
+             * freezes, then the callback is not played, and the condition of the loop becomes false. Finally, we check if the upload is
+             * complete: if not, then we send an exception.
+             *
+             * Translated with www.DeepL.com/Translator (free version)
+             */
+
             CheckSftpClientConnected();
 
             DateTime dtT = DateTime.Now.AddSeconds(10);
@@ -308,12 +320,11 @@ namespace TwoStageFileTransfer.business.connexions
             {
 
                 uploadCallback?.Invoke(obj);
-                if (DateTime.Now > dtT)
-                {
-                    _log.Debug($"Transfered {obj}");
-                    dtT = dtT.AddSeconds(10);
-                    _log.Debug($" >> {dtT}");
-                }
+                if (DateTime.Now <= dtT) return;
+
+                _log.Debug($"Transfered {obj}");
+                dtT = dtT.AddSeconds(10);
+                _log.Debug($" >> {dtT}");
             }
 
             object objState = "null";
@@ -350,6 +361,9 @@ namespace TwoStageFileTransfer.business.connexions
         }
 
 
+        /// <summary>
+        /// Checks that the client has been initialized, and that the connection is active.
+        /// </summary>
         private void CheckSftpClientConnected()
         {
             if (_innerSftpClient == null || !_innerSftpClient.IsConnected)

@@ -27,6 +27,7 @@ namespace TwoStageFileTransfer.dto
         public CredentialOrigins CredentialsOrigin { get; set; }
         public string RemoteHost { get; internal set; }
         public int RemotePort { get; internal set; }
+        public string TsftPassphrase { get; set; }
 
         public AppArgs()
         {

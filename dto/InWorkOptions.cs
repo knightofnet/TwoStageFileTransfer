@@ -1,4 +1,6 @@
-﻿namespace TwoStageFileTransfer.dto
+﻿using System;
+
+namespace TwoStageFileTransfer.dto
 {
     class InWorkOptions : CommonWorkOptions
     {
@@ -8,6 +10,7 @@
 
 
         public string TsftFilePath { get; set; }
+
         
     }
 }

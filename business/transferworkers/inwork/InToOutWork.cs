@@ -6,11 +6,13 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
+using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
+using FileUtils = TwoStageFileTransfer.utils.FileUtils;
 
 namespace TwoStageFileTransfer.business.transferworkers.inwork
 {
@@ -55,7 +57,8 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             MainTestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
 
             string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
-
+            _log.Info($"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
+            ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
 
             Console.Write("Creating part files... ");
             DateTime mainStart = DateTime.Now;
@@ -95,12 +98,14 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
                         if (isFirstFileCreated)
                         {
-                            string tsftFileContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
-                                partFileMaxLenght, sha1);
+                            TsftFileSecured tsftFileContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
+                                partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase);
                             if (tsftFileContent != null)
                             {
+                                
+
                                 InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
-                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftFileContent, Encoding.UTF8);
+                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftFileContent.SecureContent, Encoding.UTF8);
                             }
 
                         }
@@ -186,11 +191,17 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             }
             catch (Exception ex)
             {
+                if (fileOutPath.File.Exists)
+                {
+                    fileOutPath.File.Delete();
+
+                }
                 if (fileOutPath.TempFile.Exists)
                 {
                     fileOutPath.TempFile.Delete();
                     
                 }
+
                 throw  ex;
             }
 

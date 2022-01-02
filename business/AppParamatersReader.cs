@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -16,6 +17,7 @@ using TwoStageFileTransfer.utils;
 using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
 using static TwoStageFileTransfer.utils.LogUtils;
 using AryxDevLibrary.utils.logger;
+using TwoStageFileTransfer.exceptions;
 
 namespace TwoStageFileTransfer.business
 {
@@ -81,46 +83,17 @@ namespace TwoStageFileTransfer.business
                 }
 
 
-
                 if (isTsftFile)
                 {
-                    String configFile = File.ReadAllText(tsftFilePath, Encoding.UTF8);
-                    configFile = StringCipher.Decrypt(configFile, "test");
-
-                    TsftFile tsftFile;
-                    using (TextReader reader = new StringReader(configFile))
-                    {
-                        tsftFile = (TsftFile)new XmlSerializer(typeof(TsftFile)).Deserialize(reader);
-                    }
-
-                    if (tsftFile.TempDir.Type == TransferTypes.FTP)
-                    {
-                        appArgs.TransferType = TransferTypes.FTP;
-
-                    }
-                    else if (tsftFile.TempDir.Type == TransferTypes.SFTP)
-                    {
-                        appArgs.TransferType = TransferTypes.SFTP;
-
-                    }
-
-                    appArgs.TsftFile = tsftFile;
-                    if (string.IsNullOrWhiteSpace(appArgs.FtpUser))
-                    {
-                        appArgs.CredentialsOrigin = CredentialOrigins.TsftFile;
-                        appArgs.FtpUser = appArgs.TsftFile.TempDir.FtpUsername;
-                        appArgs.FtpPassword = appArgs.TsftFile.TempDir.FtpPassword;
-
-                    }
-
-                    remotePath = appArgs.TsftFile.TempDir.Path;
-
-
+                    remotePath = ReadTsftFile(appArgs, tsftFilePath);
                 }
 
                 if (appArgs.IsRemoteTransfertType)
                 {
-
+                    if (appArgs.TsftPassphrase == null)
+                    {
+                        appArgs.TsftPassphrase = StringUtils.RandomString(16, AppCst.PassPhraseCharset, true);
+                    }
 
                     Uri uriSource = null;
                     NetworkCredential creds = new NetworkCredential(appArgs.FtpUser, appArgs.FtpPassword);
@@ -219,6 +192,82 @@ namespace TwoStageFileTransfer.business
 
             return appArgs;
 
+        }
+
+        private static string ReadTsftFile(AppArgs appArgs, string tsftFilePath)
+        {
+            if (appArgs.TsftPassphrase == null)
+            {
+               appArgs.TsftPassphrase = AppCst.DefaultPassPhrase;
+            }
+
+            TsftFile tsftFile = DecryptTsft(appArgs, tsftFilePath, appArgs.TransferType != TransferTypes.Windows);
+            if (tsftFile == null)
+            {
+                Console.WriteLine("Enter passphrase to decrypt TSFT file:");
+                if (Reader.TryReadLine(out var passphraseInput, 120 * 1000))
+                {
+                    appArgs.TsftPassphrase = passphraseInput;
+                }
+                else
+                {
+                    throw new CliParsingException(
+                        "No passphrase entered to read tsftFile. Use parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt} to enter it.");
+                }
+                tsftFile = DecryptTsft(appArgs, tsftFilePath, true);
+
+            }
+
+            if (tsftFile.TempDir.Type == TransferTypes.FTP)
+            {
+                appArgs.TransferType = TransferTypes.FTP;
+            }
+            else if (tsftFile.TempDir.Type == TransferTypes.SFTP)
+            {
+                appArgs.TransferType = TransferTypes.SFTP;
+            }
+
+            appArgs.TsftFile = tsftFile;
+            if (string.IsNullOrWhiteSpace(appArgs.FtpUser))
+            {
+                appArgs.CredentialsOrigin = CredentialOrigins.TsftFile;
+                appArgs.FtpUser = appArgs.TsftFile.TempDir.FtpUsername;
+                appArgs.FtpPassword = appArgs.TsftFile.TempDir.FtpPassword;
+            }
+
+            var remotePath = appArgs.TsftFile.TempDir.Path;
+
+
+            return remotePath;
+        }
+
+        private static TsftFile DecryptTsft(AppArgs appArgs, string tsftFilePath, bool isThrowException = true)
+        {
+            try
+            {
+                String configFile = File.ReadAllText(tsftFilePath, Encoding.UTF8);
+                configFile = StringCipher.Decrypt(configFile, appArgs.TsftPassphrase);
+
+                TsftFile tsftFile;
+                using (TextReader reader = new StringReader(configFile))
+                {
+                    tsftFile = (TsftFile)new XmlSerializer(typeof(TsftFile)).Deserialize(reader);
+                }
+
+                return tsftFile;
+            }
+            catch (CryptographicException ex)
+            {
+                if (isThrowException)
+                {
+                    throw new AppException(
+                        $"Can't decrypt TSFT {appArgs.Source}. Check the input. If not, you can enter it " +
+                        $"with the input parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt}.",
+                        EnumExitCodes.KO_CHECK_BEFORE_TRT);
+                }
+
+                return null;
+            }
         }
 
         private static bool IsValidUri(string remotePath, TransferTypes transferType)

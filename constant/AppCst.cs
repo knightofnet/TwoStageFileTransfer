@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using AryxDevLibrary.utils;
 
 namespace TwoStageFileTransfer.constant
 {
@@ -13,5 +14,10 @@ namespace TwoStageFileTransfer.constant
 
 
         public static readonly char[] TrimPathChars = new[] { ' ', '"' };
+
+        public static readonly string PassPhraseCharset =
+            "ABCDEFGHJLMNPQRSTUVWXYZabcdefghikmnpqrstuvwxyz0123456789+-*/&.,:!?§%()[]<>";
+
+        public static readonly string DefaultPassPhrase = "DefaultPassphrase";
     }
 }
