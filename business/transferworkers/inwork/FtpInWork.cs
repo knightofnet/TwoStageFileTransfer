@@ -60,7 +60,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
 
             string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
-            _log.Info( $"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
+            _log.Info($"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
             ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
 
 
@@ -141,24 +141,41 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
         }
 
+        /*
+                protected override long CalculatePartFileMaxLenght()
+                {
+                    if (InWorkOptions.MaxSizeUsedOnShared == -1)
+                    {
+                        InWorkOptions.MaxSizeUsedOnShared = (long)AFileUtils.HumanReadableSizeToLong("20Mo");
+                    }
+                    long partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
+
+
+                    partFileMaxLenght = new[]
+                    {
+                        InWorkOptions.MaxSizeUsedOnShared, partFileMaxLenght, InWorkOptions.Source.Length
+                    }.Min();
+
+                    LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
+                    return partFileMaxLenght;
+                }
+        */
         protected override long CalculatePartFileMaxLenght()
         {
-            if (InWorkOptions.MaxSizeUsedOnShared == -1)
+            long partFileMaxLenght = InWorkOptions.PartFileSize;
+            if (partFileMaxLenght == -1)
             {
-                InWorkOptions.MaxSizeUsedOnShared = (long)AFileUtils.HumanReadableSizeToLong("20Mo");
+                partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
             }
-            long partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
-
 
             partFileMaxLenght = new[]
             {
                 InWorkOptions.MaxSizeUsedOnShared, partFileMaxLenght, InWorkOptions.Source.Length
             }.Min();
 
-            LogUtils.I(_log, $"Part file size: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(partFileMaxLenght)}");
+            LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
             return partFileMaxLenght;
         }
-
         private long WritePartFile(long partFileMaxLenght, ProgressBar pbar, FileStream fs, AppFileFtp fileOutPath, DateTime localStart, int nbTentative)
         {
 

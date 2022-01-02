@@ -16,7 +16,7 @@ using TwoStageFileTransfer.utils;
 namespace TwoStageFileTransfer.business.connexions
 {
 
-    class SshConnexion : IConnexion
+    public class SshConnexion : IConnexion
     {
         private static readonly Logger _log = Logger.LastLoggerInstance;
 

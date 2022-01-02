@@ -143,17 +143,19 @@ namespace TwoStageFileTransfer
         private static void StartFirstStage(AppArgs appArgs)
         {
 
-            long maxTransferLenght = appArgs.ChunkSize;
-            if (appArgs.TransferType == TransferTypes.Windows)
+            long maxTransferLenght = appArgs.MaxDiskPlaceToUse;
+            if (maxTransferLenght == -1)
             {
-                maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
-                I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
+                if (appArgs.TransferType == TransferTypes.Windows)
+                {
+                    maxTransferLenght = (long)(FileUtils.GetAvailableSpace(appArgs.Target, 20 * 1024 * 1024) * 0.9);
+                    I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
+                }
+                else if (appArgs.IsRemoteTransfertType)
+                {
+                    maxTransferLenght = (long)AryxDevLibrary.utils.FileUtils.HumanReadableSizeToLong("20Mo");
+                }
             }
-            else if (appArgs.TransferType == TransferTypes.FTP)
-            {
-                //I(_log, $"Max size that can be used: {AryxDevLibrary.utils.FileUtils.HumanReadableSize(maxTransferLenght)}");
-            }
-
 
 
             InWorkOptions jobOptions = new InWorkOptions()

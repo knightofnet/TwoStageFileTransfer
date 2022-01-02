@@ -116,6 +116,16 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 Thread.Sleep(500);
             }
 
+            if (!Options.KeepPartFiles && Options.AppArgs.TsftFile != null)
+            {
+                Options.Source.Delete();
+                Uri remoteTsftFile = FtpUtils.FtpPathCombine(Options.Tsft.TempDir.Path, Options.Source.Name).ToUri();
+                if (Connexion.IsFileExists(remoteTsftFile))
+                {
+                    Connexion.DeleteFile(remoteTsftFile);
+                }
+            }
+
             targetFile.MoveTo(rTargetFile.FullName);
             Console.WriteLine("Done.");
             TimeSpan duration = DateTime.Now - mainStart;

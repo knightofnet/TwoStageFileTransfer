@@ -10,7 +10,7 @@ using Renci.SshNet.Messages.Connection;
 
 namespace TwoStageFileTransfer.business.connexions
 {
-    class FtpConnexion : IConnexion
+    public class FtpConnexion : IConnexion
     {
         public NetworkCredential Credentials { get; }
         public Uri RootUri { get; }

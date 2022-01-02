@@ -72,12 +72,19 @@ namespace TwoStageFileTransfer.business
 
                 }
 
+                // Controle ChunkSize Vs MaxDiskPlaceToUse
+                if (appArgs.MaxDiskPlaceToUse != -1 && appArgs.MaxDiskPlaceToUse < appArgs.ChunkSize)
+                {
+                    throw new CliParsingException($"Max disk place to use must be greather or equals than chunk size");
+                }
+
+
                 string remotePath = appArgs.Source;
                 if (appArgs.Direction == DirectionTrts.IN)
                 {
                     remotePath = appArgs.Target;
                 }
-                if (!UriUtils.IsUriParsable(remotePath) || !IsValidUri(remotePath, appArgs.TransferType))
+                if (appArgs.IsRemoteTransfertType && (!UriUtils.IsUriParsable(remotePath) || !IsValidUri(remotePath, appArgs.TransferType)))
                 {
                     throw new CliParsingException($"Remote path invalid ('{remotePath}')");
                 }
@@ -153,7 +160,6 @@ namespace TwoStageFileTransfer.business
                     }
                 }
 
-
             }
             catch (CliParsingException e)
             {
@@ -198,7 +204,7 @@ namespace TwoStageFileTransfer.business
         {
             if (appArgs.TsftPassphrase == null)
             {
-               appArgs.TsftPassphrase = AppCst.DefaultPassPhrase;
+                appArgs.TsftPassphrase = AppCst.DefaultPassPhrase;
             }
 
             TsftFile tsftFile = DecryptTsft(appArgs, tsftFilePath, appArgs.TransferType != TransferTypes.Windows);
@@ -212,19 +218,19 @@ namespace TwoStageFileTransfer.business
                 else
                 {
                     throw new CliParsingException(
-                        "No passphrase entered to read tsftFile. Use parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt} to enter it.");
+                        $"No passphrase entered to read tsftFile. Use parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt} to enter it.");
                 }
                 tsftFile = DecryptTsft(appArgs, tsftFilePath, true);
-
             }
 
-            if (tsftFile.TempDir.Type == TransferTypes.FTP)
+            switch (tsftFile.TempDir.Type)
             {
-                appArgs.TransferType = TransferTypes.FTP;
-            }
-            else if (tsftFile.TempDir.Type == TransferTypes.SFTP)
-            {
-                appArgs.TransferType = TransferTypes.SFTP;
+                case TransferTypes.FTP:
+                    appArgs.TransferType = TransferTypes.FTP;
+                    break;
+                case TransferTypes.SFTP:
+                    appArgs.TransferType = TransferTypes.SFTP;
+                    break;
             }
 
             appArgs.TsftFile = tsftFile;
@@ -235,7 +241,7 @@ namespace TwoStageFileTransfer.business
                 appArgs.FtpPassword = appArgs.TsftFile.TempDir.FtpPassword;
             }
 
-            var remotePath = appArgs.TsftFile.TempDir.Path;
+            string remotePath = appArgs.TsftFile.TempDir.Path;
 
 
             return remotePath;
@@ -245,6 +251,11 @@ namespace TwoStageFileTransfer.business
         {
             try
             {
+                if (appArgs.TsftPassphrase == null)
+                {
+                    throw new Exception("Passphrase not set");
+                }
+
                 String configFile = File.ReadAllText(tsftFilePath, Encoding.UTF8);
                 configFile = StringCipher.Decrypt(configFile, appArgs.TsftPassphrase);
 
@@ -262,7 +273,7 @@ namespace TwoStageFileTransfer.business
                 {
                     throw new AppException(
                         $"Can't decrypt TSFT {appArgs.Source}. Check the input. If not, you can enter it " +
-                        $"with the input parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt}.",
+                        $"with the input parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt}.", ex,
                         EnumExitCodes.KO_CHECK_BEFORE_TRT);
                 }
 

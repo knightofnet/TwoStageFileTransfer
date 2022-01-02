@@ -144,6 +144,11 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 Thread.Sleep(500);
             }
 
+            if (!Options.KeepPartFiles && Options.AppArgs.TsftFile != null)
+            {
+                Options.Source.Delete();
+            }
+
             targetFile.MoveTo(rTargetFile.FullName);
             Console.WriteLine("Done.");
             TimeSpan duration = DateTime.Now - mainStart;

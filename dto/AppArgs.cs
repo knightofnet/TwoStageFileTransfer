@@ -11,6 +11,8 @@ namespace TwoStageFileTransfer.dto
         public int BufferSize { get; internal set; }
 
         public bool IsDoCompress { get; internal set; }
+
+        public long MaxDiskPlaceToUse { get; set; }
         public long ChunkSize { get; internal set; }
         public bool CanOverwrite { get; set; }
         public SourceRuns SourceRun { get; set; }
@@ -28,6 +30,7 @@ namespace TwoStageFileTransfer.dto
         public string RemoteHost { get; internal set; }
         public int RemotePort { get; internal set; }
         public string TsftPassphrase { get; set; }
+      
 
         public AppArgs()
         {
