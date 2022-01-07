@@ -139,12 +139,26 @@ The main use of the application is through the command line and input parameters
 Syntax: tsft.exe OPTIONS
 
 OPTIONS :
-    -d    Required. Transfer direction. Values : in,out (also : --direction)
-    -s    Path to source file. For the 'in' mode, the file to be transfered. For the 'out' mode the first transfert file (or the folder containing this first file) (also : --source)
-    -t    Path to the target. For the 'in' mode, to the folder where to generate the transfer files. for the 'out' mode, the folder where the file will be placed (also : --target)
-    -b    Buffer size. Default: 8192 (also : --buffer-size)
-    -c    Force part file size. Default: file size divided by 10, or max 50Mo (also : --chunk)
-    -w    Overwrite existing files. Default: none (also : --overwrite)
+   -d    Required. Transfer direction. Values : in,out (also : --direction)
+   -s    Path to the source file. For the 'in' mode, the file to transfer. For the 'out' mode (i.e. second stage), it depends on the type of the transfert. For 'Windows' type transfers, it can be the first file to be transferred (i.e. the folder containing this fi
+         rst file) or the TSFT file generated at the first level. When it is a transfer using a remote server (type 'FTP' or 'SFTP'), the 'out' mode only accepts a TSFT file as a source file. (also : --source)
+   -t    Path for the target. For the 'in' mode, the folder where to generate the transfer files: this can be a local Windows folder or on the local network, but also a file on an FTP server (uri starting with ftp://) or an SFTP server (uri starting with sftp://ho
+         st:port). For the latter two cases, this must be in accordance with the -p parameter. For the 'out' mode, to the folder where the reconstructed file will be placed. (also : --target)
+   -b    Buffer size. Default: 8192 (also : --buffer-size)
+   -m    Maximum size that will be used by all the transfer files. For 'Windows' type transfers, if this parameter is not set, the maximum size will be calculated in relation to the remaining disk space (90% of the remaining space). For transfers using a remote se
+         rver, the parameter is recommended. If it is omitted, the maximum size used is arbitrarily 20MB. (also : --maxdiskplace)
+   -c    Maximum size of a transfer file (file with a .part extension). Default: size of the available space divided by 10, 50MB max, or the size of the source file. (also : --chunk)
+   -w    Overwrite existing files. Default: none (also : --overwrite)
+   -k    Does not delete part files after reading in 'out' mode. Allows to restart the redial process several times, but may prevent the first step from finishing if the maximum size allowed by the transfer is reached and therefore the program is waiting (also : -
+         -keep-part-files)
+   -p    Protocol type used for the transfer. Can be Windows, Ftp, Sftp. Default: Windows (also : --protocol)
+  -pu    Username for connecting to the remote server protocol. Used when -p is set to Ftp or Sftp. If set, can override username sets in TSFT file. Default: None. (also : --protocol-username)
+  -pp    Password for connecting to the remote server protocol. Used when -p is set to Ftp or Sftp. If set, can override password sets in TSFT file. Default: None. (also : --protocol-password)
+  -pw    In the 'in' mode, when credentials need to be used (e.g. with the FTP,SFTP protocols), include these data in the generated TSFT file. This way, in the 'out' mode, these data will not be requested again, only the passphrase will be (also : --tsft-with-cred
+         entials)
+  -ph    The passphrase used to encrypt (with 'in' mode) or decrypt (with 'out' mode) the TSFT file. If this parameter is omitted, the passphrase will be randomly generated in 'in' mode (look at the console or logs); for 'out' mode, it will be requested. (also : -
+         -passphrase)
+  -pn    Allows you to use the default passphrase. (also : --passphrase-none)
 ```
 This list is displayed when the program is invoked without parameters.
 
