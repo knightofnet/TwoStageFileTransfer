@@ -104,16 +104,13 @@ That's what this tool was born from.
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Prerequisites
 
 This application runs on Microsoft Windows with .net Framework 4.5.2.
 
 To test that you have the minimum version required, you can run this Powershell command:
 
-1. Open Powershell buy typing ```powershell``` into command prompt, or start menu.
+1. Open Powershell by typing ```powershell``` into command prompt, or start menu.
 2. Write this 
 ```
 (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release -ge 379893
@@ -204,8 +201,6 @@ tsft.exe -d out -s "W:\tempAndSharedFolder\MyFile.tsft" -t "D:\FinalFolder\"
 3. If source or target parameters are missing, the user will be prompted to fill them in. Into the console if the program is run in commands prompt, or with classics windows if the program is runned with explorer (or by using a classic shortcut). By ommiting these parameters and simply passing tsft file as paramater, the direction ``out`` is automaticaly setted and you will be prompted to select targer folder for recomposing file.
 
 4. As soon as the TSFT file is created (or as soon as the *.part0 file is created) in the shared folder, then it is possible to run the program for the second step.
-
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
