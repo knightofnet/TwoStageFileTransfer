@@ -39,7 +39,9 @@
 
   <p align="center">
     TSFT aims to transfer a file from one computer to another, passing through a common shared directory whose disk space does not allow direct intermediate copies. On the source computer, the file will be split while the target computer will reassemble the file in the target folder. 
-    <br />
+    <br /><br />
+   <b>Not perfect yet, but still in development.</b>
+    <br /><br />
     <a href="https://github.com/knightofnet/TwoStageFileTransfer"><strong>Explore the docs »</strong></a>
     <br />
     <br />
@@ -102,16 +104,13 @@ That's what this tool was born from.
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
 ### Prerequisites
 
 This application runs on Microsoft Windows with .net Framework 4.5.2.
 
 To test that you have the minimum version required, you can run this Powershell command:
 
-1. Open Powershell buy typing ```powershell``` into command prompt, or start menu.
+1. Open Powershell by typing ```powershell``` into command prompt, or start menu.
 2. Write this 
 ```
 (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full").Release -ge 379893
@@ -137,15 +136,24 @@ The main use of the application is through the command line and input parameters
 
 ```
 Syntax: tsft.exe OPTIONS
+```
 
 OPTIONS :
-    -d    Required. Transfer direction. Values : in,out (also : --direction)
-    -s    Path to source file. For the 'in' mode, the file to be transfered. For the 'out' mode the first transfert file (or the folder containing this first file) (also : --source)
-    -t    Path to the target. For the 'in' mode, to the folder where to generate the transfer files. for the 'out' mode, the folder where the file will be placed (also : --target)
-    -b    Buffer size. Default: 8192 (also : --buffer-size)
-    -c    Force part file size. Default: file size divided by 10, or max 50Mo (also : --chunk)
-    -w    Overwrite existing files. Default: none (also : --overwrite)
-```
+- ``-d``    Required. Transfer direction. Values : ``in``,``out`` (also : ``--direction``)
+- ``-s``    Path to the source file. For the 'in' mode, the file to transfer. For the 'out' mode (i.e. second stage), it depends on the type of the transfert. For ``Windows`` type transfers, it can be the first file to be transferred (i.e. the folder containing this first file) or the TSFT file generated at the first level. When it is a transfer using a remote server (type ``FTP`` or ``SFTP``), the 'out' mode only accepts a TSFT file as a source file. (also : ``--source``)
+- ``-t``    Path for the target. For the 'in' mode, the folder where to generate the transfer files: this can be a local Windows folder or on the local network, but also a file on an FTP server (uri starting with ``ftp://``) or an SFTP server (uri starting with ``sftp://host:port``). For the latter two cases, this must be in accordance with the -p parameter. For the 'out' mode, to the folder where the reconstructed file will be placed. (also : ``--target``)
+- ``-b``    Buffer size. Default: 8192 (also : ``--buffer-size``)
+- ``-m``    Maximum size that will be used by all the transfer files. For 'Windows' type transfers, if this parameter is not set, the maximum size will be calculated in relation to the remaining disk space (90% of the remaining space). For transfers using a remote server, the parameter is recommended. If it is omitted, the maximum size used is arbitrarily 20MB. (also : ``--maxdiskplace``)
+- ``-c``    Maximum size of a transfer file (file with a .part extension). Default: size of the available space divided by 10, 50MB max, or the size of the source file. (also : ``--chunk``)
+- ``-w``    Overwrite existing files. Default: none (also : ``--overwrite``)
+- ``-k``    Does not delete part files after reading in 'out' mode. Allows to restart the redial process several times, but may prevent the first step from finishing if the maximum size allowed by the transfer is reached and therefore the program is waiting (also : ``--keep-part-files``)
+- ``-p``    Protocol type used for the transfer. Can be ``Windows``, ``Ftp``, ``Sftp``. Default: ``Windows`` (also : ``--protocol``)
+- ``-pu``    Username for connecting to the remote server protocol. Used when -p is set to Ftp or Sftp. If set, can override username sets in TSFT file. Default: None. (also : --protocol-username)
+- ``-pp``    Password for connecting to the remote server protocol. Used when -p is set to Ftp or Sftp. If set, can override password sets in TSFT file. Default: None. (also : ``--protocol-password``)
+- ``-pw``    In the 'in' mode, when credentials need to be used (e.g. with the FTP,SFTP protocols), include these data in the generated TSFT file. This way, in the 'out' mode, these data will not be requested again, only the passphrase will be (also : ``--tsft-with-credentials``)
+- ``-ph``    The passphrase used to encrypt (with 'in' mode) or decrypt (with 'out' mode) the TSFT file. If this parameter is omitted, the passphrase will be randomly generated in 'in' mode (look at the console or logs); for 'out' mode, it will be requested. (also : ``--passphrase``)
+- ``-pn``    Allows you to use the default passphrase. (also : ``--passphrase-none``)
+
 This list is displayed when the program is invoked without parameters.
 
 ### When this program can help ?
@@ -193,8 +201,6 @@ tsft.exe -d out -s "W:\tempAndSharedFolder\MyFile.tsft" -t "D:\FinalFolder\"
 3. If source or target parameters are missing, the user will be prompted to fill them in. Into the console if the program is run in commands prompt, or with classics windows if the program is runned with explorer (or by using a classic shortcut). By ommiting these parameters and simply passing tsft file as paramater, the direction ``out`` is automaticaly setted and you will be prompted to select targer folder for recomposing file.
 
 4. As soon as the TSFT file is created (or as soon as the *.part0 file is created) in the shared folder, then it is possible to run the program for the second step.
-
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
 
 
 <p align="right">(<a href="#top">back to top</a>)</p>
