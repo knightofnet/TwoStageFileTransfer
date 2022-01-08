@@ -126,7 +126,12 @@
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\TwoStageFileTransferCore\TwoStageFileTransferCore.csproj">
+      <Project>{e432c822-d13c-4824-ab0a-dc7344e2efc2}</Project>
+      <Name>TwoStageFileTransferCore</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\TextTemplating\Microsoft.TextTemplating.targets" />
 </Project>
