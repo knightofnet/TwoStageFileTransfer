@@ -1,6 +1,7 @@
 ﻿using System;
 using AryxDevLibrary.utils.logger;
 using TwoStageFileTransfer.constant;
+using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.utils
 {

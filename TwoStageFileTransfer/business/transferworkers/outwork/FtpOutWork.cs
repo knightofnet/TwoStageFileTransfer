@@ -4,12 +4,13 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using AryxDevLibrary.utils;
-using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
-using FileUtils = TwoStageFileTransfer.utils.FileUtils;
+using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.constant;
+using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 
 namespace TwoStageFileTransfer.business.transferworkers.outwork
 {
@@ -57,7 +58,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 }
                 */
 
-                _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, 0));
+                _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, TwoStageFileTransferCore.utils.FileUtils.GetFileName(finalFileName, totalBytesToRead, 0));
             }
             else
             {
@@ -104,7 +105,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
                     totalBytesRead = ReadPartFile(currentFileToRead, totalBytesRead, fo, pbar, totalBytesToRead);
 
-                    currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, FileUtils.GetFileName(finalFileName, totalBytesToRead, i++));
+                    currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, TwoStageFileTransferCore.utils.FileUtils.GetFileName(finalFileName, totalBytesToRead, i++));
 
                 }
 
@@ -131,7 +132,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
-            FileUtils.CalculculateSourceSha1(targetFile, sha1FinalFile);
+            TwoStageFileTransferCore.utils.FileUtils.CalculculateSourceSha1(targetFile, sha1FinalFile);
 
           
         }

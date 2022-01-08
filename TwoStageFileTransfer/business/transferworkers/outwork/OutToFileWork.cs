@@ -7,6 +7,8 @@ using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.business.transferworkers.outwork
 {

@@ -1,9 +1,8 @@
 ﻿using System.Text.RegularExpressions;
-using AryxDevLibrary.utils;
 
-namespace TwoStageFileTransfer.constant
+namespace TwoStageFileTransferCore.constant
 {
-    class AppCst
+    public class AppCst
     {
 
         public const int BufferSize = 8192;

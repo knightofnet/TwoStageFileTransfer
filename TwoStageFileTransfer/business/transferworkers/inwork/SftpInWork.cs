@@ -1,15 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using Renci.SshNet;
-using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.constant;
 
 namespace TwoStageFileTransfer.business.transferworkers.inwork
 {

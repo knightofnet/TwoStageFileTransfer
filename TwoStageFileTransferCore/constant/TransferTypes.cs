@@ -1,4 +1,4 @@
-﻿namespace TwoStageFileTransfer.constant
+﻿namespace TwoStageFileTransferCore.constant
 {
     public enum TransferTypes
     {

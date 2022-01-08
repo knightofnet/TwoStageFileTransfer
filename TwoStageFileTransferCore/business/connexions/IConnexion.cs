@@ -2,7 +2,7 @@
 using System.IO;
 using System.Net;
 
-namespace TwoStageFileTransfer.business.connexions
+namespace TwoStageFileTransferCore.business.connexions
 {
     public interface IConnexion
     {

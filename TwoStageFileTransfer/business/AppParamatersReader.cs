@@ -9,15 +9,17 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.cliParser;
-using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.business.moderuns;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
-using static TwoStageFileTransfer.utils.LogUtils;
+using static TwoStageFileTransferCore.utils.LogUtils;
 using AryxDevLibrary.utils.logger;
 using TwoStageFileTransfer.exceptions;
+using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.business
 {
@@ -51,7 +53,8 @@ namespace TwoStageFileTransfer.business
                 string tsftFilePath = null;
                 if (args.Length == 1 && args[0].ToLower().EndsWith(".tsft"))
                 {
-                    appArgs = new AppArgs() { Direction = DirectionTrts.OUT, Source = args[0], TransferType = TransferTypes.Windows };
+                    appArgs = new AppArgs()
+                    { Direction = DirectionTrts.OUT, Source = args[0], TransferType = TransferTypes.Windows };
                     isTsftFile = true;
                     tsftFilePath = args[0];
                     D(_log, "Run with tsft file : Mode OUT");
@@ -84,7 +87,9 @@ namespace TwoStageFileTransfer.business
                 {
                     remotePath = appArgs.Target;
                 }
-                if (appArgs.IsRemoteTransfertType && (!UriUtils.IsUriParsable(remotePath) || !IsValidUri(remotePath, appArgs.TransferType)))
+
+                if (appArgs.IsRemoteTransfertType && (!UriUtils.IsUriParsable(remotePath) ||
+                                                      !IsValidUri(remotePath, appArgs.TransferType)))
                 {
                     throw new CliParsingException($"Remote path invalid ('{remotePath}')");
                 }
@@ -146,7 +151,8 @@ namespace TwoStageFileTransfer.business
                             }
                         }
 
-                        msgError += $"Specify the -{AppArgsParser.OptFtpUser.ShortOpt} and -{AppArgsParser.OptFtpPassword.ShortOpt} parameters to make the connection possible.";
+                        msgError +=
+                            $"Specify the -{AppArgsParser.OptFtpUser.ShortOpt} and -{AppArgsParser.OptFtpPassword.ShortOpt} parameters to make the connection possible.";
                         throw new CliParsingException(msgError);
                     }
 
@@ -155,7 +161,8 @@ namespace TwoStageFileTransfer.business
                         if (!Connexion.IsDirectoryExists(uriSource) &&
                             !Connexion.IsFileExists(uriSource))
                         {
-                            throw new CliParsingException($"FTP path '{remotePath}' must be an existing file or directory");
+                            throw new CliParsingException(
+                                $"FTP path '{remotePath}' must be an existing file or directory");
                         }
                     }
                 }
@@ -175,6 +182,18 @@ namespace TwoStageFileTransfer.business
                 }
 
                 AppUtils.Exit(EnumExitCodes.KO_PARAMS_PARSING);
+                return null;
+            }
+            catch (Exception e)
+            {
+
+                I(_log, e.Message);
+                if (appArgs == null && "explorer".Equals(sourceProcessName))
+                {
+                    Console.Read();
+                }
+
+                AppUtils.Exit(EnumExitCodes.KO_CHECK_BEFORE_TRT);
                 return null;
             }
 

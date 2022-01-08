@@ -7,6 +7,7 @@ using System.Text;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
+using TwoStageFileTransferCore.constant;
 
 namespace TwoStageFileTransfer.business
 {

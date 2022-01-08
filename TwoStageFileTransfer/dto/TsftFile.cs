@@ -3,6 +3,7 @@ using System.Xml.Serialization;
 using AryxDevLibrary.utils;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.constant;
 
 namespace TwoStageFileTransfer.dto
 {

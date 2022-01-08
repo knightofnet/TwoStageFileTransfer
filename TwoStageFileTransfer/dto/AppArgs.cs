@@ -1,4 +1,5 @@
 ﻿using TwoStageFileTransfer.constant;
+using TwoStageFileTransferCore.constant;
 
 namespace TwoStageFileTransfer.dto
 {

@@ -1,17 +1,17 @@
-﻿using AryxDevLibrary.utils.logger;
-using System;
+﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Cryptography;
 using System.Windows.Forms;
-using TwoStageFileTransfer.constant;
+using AryxDevLibrary.utils.logger;
+using TwoStageFileTransferCore.constant;
 
-namespace TwoStageFileTransfer.utils
+namespace TwoStageFileTransferCore.utils
 {
     
-    static class FileUtils
+    public static class FileUtils
     {
         private static readonly Logger _log = Logger.LastLoggerInstance;
 
@@ -20,7 +20,7 @@ namespace TwoStageFileTransfer.utils
             return origNameFile + "." + fileSize + ".part" + part;
         }
 
-        internal static long GetAvailableSpace(string target, long defaultRet)
+        public static long GetAvailableSpace(string target, long defaultRet)
         {
             DirectoryInfo t = new DirectoryInfo(target);
 
@@ -204,7 +204,7 @@ namespace TwoStageFileTransfer.utils
 
         public static string CalculculateSourceSha1(FileInfo file, string compSha1 = null)
         {
-            Console.Write("Calculate SHA1... ", _log);
+            Console.Write((string)"Calculate SHA1... ", (object)_log);
             _log.Info("Calculate SHA1");
             DateTime start = DateTime.Now;
 

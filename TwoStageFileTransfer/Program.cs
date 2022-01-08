@@ -1,26 +1,19 @@
-﻿using AryxDevLibrary.utils.logger;
-using System;
+﻿using System;
 using System.IO;
-using System.Linq;
-using System.Net;
 using System.Reflection;
-using System.Text;
-using System.Xml.Serialization;
-using AryxDevLibrary.extensions;
 using AryxDevLibrary.utils;
-using AryxDevLibrary.utils.cliParser;
+using AryxDevLibrary.utils.logger;
 using TwoStageFileTransfer.business;
-using TwoStageFileTransfer.business.connexions;
-using TwoStageFileTransfer.business.moderuns;
 using TwoStageFileTransfer.business.transferworkers;
 using TwoStageFileTransfer.business.transferworkers.inwork;
 using TwoStageFileTransfer.business.transferworkers.outwork;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransfer.constant;
+using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
-using static TwoStageFileTransfer.utils.LogUtils;
-using FileUtils = TwoStageFileTransfer.utils.FileUtils;
+using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.constant;
+using static TwoStageFileTransferCore.utils.LogUtils;
+using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
 
 namespace TwoStageFileTransfer

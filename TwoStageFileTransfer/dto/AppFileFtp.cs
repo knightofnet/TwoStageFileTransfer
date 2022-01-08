@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Net;
 using AryxDevLibrary.utils;
-using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.business.connexions;
 
 namespace TwoStageFileTransfer.dto
 {

@@ -2,3 +2,11 @@ bin
 obj
 .vs
 /packages
+TwoStageFileTransfer/bin
+TwoStageFileTransfer/obj
+TwoStageFileTransfer/.vs
+TwoStageFileTransfer/packages
+TwoStageFileTransferCore/bin
+TwoStageFileTransferCore/obj
+TwoStageFileTransferCore/.vs
+TwoStageFileTransferCore/packages

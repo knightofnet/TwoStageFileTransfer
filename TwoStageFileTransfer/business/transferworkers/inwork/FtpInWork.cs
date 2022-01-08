@@ -5,15 +5,15 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using System.Xml;
-using System.Xml.Serialization;
 using AryxDevLibrary.utils;
-using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
-using FileUtils = TwoStageFileTransfer.utils.FileUtils;
+using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.utils;
+using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
 namespace TwoStageFileTransfer.business.transferworkers.inwork
@@ -59,7 +59,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             }
 
 
-            string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
+            string sha1 = TwoStageFileTransferCore.utils.FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
             _log.Info($"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
             ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
 
@@ -82,7 +82,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                     bool isFirstFileCreated = true;
                     while (TotalBytesRead < fs.Length)
                     {
-                        string filenameOut = FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex);
+                        string filenameOut = TwoStageFileTransferCore.utils.FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex);
                         AppFileFtp fileFtp = new AppFileFtp(InWorkOptions.Target, filenameOut);
 
 
@@ -165,7 +165,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             long partFileMaxLenght = InWorkOptions.PartFileSize;
             if (partFileMaxLenght == -1)
             {
-                partFileMaxLenght = Math.Min(InWorkOptions.MaxSizeUsedOnShared / 10, 50 * 1024 * 1024);
+                partFileMaxLenght = Math.Min((int)(InWorkOptions.MaxSizeUsedOnShared / 10), 50 * 1024 * 1024);
             }
 
             partFileMaxLenght = new[]
@@ -327,14 +327,14 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             long nbFiles = (source.Length / chunkSize) + (source.Length % chunkSize == 0 ? 0 : 1);
             for (long i = 0; i < nbFiles; i++)
             {
-                Uri tmpFile = FtpUtils.FtpPathCombine(target, "~" + FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i)).ToUri();
+                Uri tmpFile = FtpUtils.FtpPathCombine(target, "~" + TwoStageFileTransferCore.utils.FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i)).ToUri();
                 if (Connexion.IsFileExists(tmpFile))
                 {
                     _log.Debug($"File {tmpFile.AbsoluteUri} already exists.");
                     Connexion.DeleteFile(tmpFile.AbsolutePath);
                 }
 
-                Uri realPartFile = FtpUtils.FtpPathCombine(target, FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i)).ToUri();
+                Uri realPartFile = FtpUtils.FtpPathCombine(target, TwoStageFileTransferCore.utils.FileUtils.GetFileName(InWorkOptions.Source.Name, source.Length, i)).ToUri();
                 if (Connexion.IsFileExists(realPartFile))
                 {
                     if (exceptionIfExists)

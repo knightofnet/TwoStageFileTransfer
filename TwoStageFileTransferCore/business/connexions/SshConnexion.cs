@@ -3,17 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.logger;
 using Renci.SshNet;
 using Renci.SshNet.Common;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.exceptions;
-using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.business.connexions
+namespace TwoStageFileTransferCore.business.connexions
 {
 
     public class SshConnexion : IConnexion
@@ -229,7 +225,7 @@ namespace TwoStageFileTransfer.business.connexions
 
         public bool IsOkToConnect()
         {
-            if (_innerSftpClient == null) throw new AppException("Connexion not initialized correctly.", EnumExitCodes.KO_CHECK_BEFORE_TRT);
+            if (_innerSftpClient == null) throw new Exception("Connexion not initialized correctly.");
 
             if (_innerSftpClient != null && _innerSftpClient.IsConnected) return true;
 
@@ -348,7 +344,7 @@ namespace TwoStageFileTransfer.business.connexions
                 _innerSftpClient.EndUploadFile(upload);
             }
 
-      
+
         }
 
         public void Close()
@@ -367,7 +363,7 @@ namespace TwoStageFileTransfer.business.connexions
         private void CheckSftpClientConnected()
         {
             if (_innerSftpClient == null || !_innerSftpClient.IsConnected)
-                throw new AppException("Connexion not initialized correctly or lost.", EnumExitCodes.KO_CHECK_BEFORE_TRT);
+                throw new Exception("Connexion not initialized correctly or lost.");
         }
     }
 }

@@ -11,8 +11,9 @@ using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.exceptions;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
-using FileUtils = TwoStageFileTransfer.utils.FileUtils;
+using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 
 namespace TwoStageFileTransfer.business.transferworkers.inwork
 {

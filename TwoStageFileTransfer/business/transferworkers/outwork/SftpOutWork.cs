@@ -5,9 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using TwoStageFileTransfer.business.connexions;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.business.connexions;
 
 namespace TwoStageFileTransfer.business.transferworkers.outwork
 {

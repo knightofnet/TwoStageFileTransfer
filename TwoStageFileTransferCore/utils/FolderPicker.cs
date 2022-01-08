@@ -1,10 +1,10 @@
-﻿namespace TwoStageFileTransfer.utils
-{
-    using System;
-    using System.Diagnostics;
-    using System.Runtime.InteropServices;
-    using System.Runtime.InteropServices.ComTypes;
+﻿using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 
+namespace TwoStageFileTransferCore.utils
+{
     /// <summary>
     /// From https://stackoverflow.com/a/66187224
     /// </summary>
