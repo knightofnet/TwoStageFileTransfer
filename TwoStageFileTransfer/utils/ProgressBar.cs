@@ -45,7 +45,11 @@ namespace TwoStageFileTransfer.utils
             IsInitialized = true;
         }
 
-        
+        public void SecondaryReport(string text)
+        {
+            Console.Title = text;
+        }
+
 
         public void Report(double value, string text)
         {

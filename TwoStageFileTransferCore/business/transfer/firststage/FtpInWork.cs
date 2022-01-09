@@ -96,7 +96,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                     if (TotalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
                     {
-                        WaitForFreeSpace(listFiles);
+                        WaitForFreeSpace(listFiles, transferReporter);
                     }
 
                     if (isFirstFileCreated)
@@ -224,7 +224,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
 
                     string msg = "Creating part file " + fileOutPath.FileTemp.LocalPath;
-                    Console.Title = $"TSFT - In - {msg}";
+                    transferReporter.SecondaryReport($"TSFT - In - {msg}");
                     _log.Debug(msg);
 
                     Array.Clear(Buffer, 0, Buffer.Length);
@@ -290,7 +290,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
             return "~" + AFileUtils.HumanReadableSize(localBytesRead / diffTime) + "/s [last part]";
         }
 
-        private void WaitForFreeSpace(HashSet<AppFileFtp> listFiles)
+        private void WaitForFreeSpace(HashSet<AppFileFtp> listFiles, IProgressTransfer transferReporter)
         {
             bool mustWriteLogStatus = true;
             long filesSize = listFiles.Where(r => r.Exists(Connexion))
@@ -303,7 +303,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                 filesSize = setFilesExist.Sum(f => f.Length);
 
-                Console.Title = $"TSFT - In - Waiting for OUT mode to work and freeing disk space...";
+                transferReporter.SecondaryReport($"TSFT - In - Waiting for OUT mode to work and freeing disk space...");
                 if (mustWriteLogStatus)
                 {
                     _log.Info("Waiting for OUT mode to work and freeing disk space : {0} + {1} > {2}", filesSize, InWorkOptions.BufferSize, InWorkOptions.MaxSizeUsedOnShared);

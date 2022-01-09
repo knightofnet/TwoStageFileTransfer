@@ -5,7 +5,7 @@ using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.utils
 {
-    public static class AppUtils
+    internal static class AppUtils
     {
         private static readonly Logger _log = Logger.LastLoggerInstance;
 

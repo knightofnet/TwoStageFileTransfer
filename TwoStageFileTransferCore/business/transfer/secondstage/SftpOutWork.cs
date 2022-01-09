@@ -15,10 +15,10 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
 
         }
 
-        protected override long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transfertReporter, long totalBytesToRead)
+        protected override long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transferReporter, long totalBytesToRead)
         {
             string msg = "Reading file " + currentFileToRead.File.Segments.Last();
-            Console.Title = $"TSFT - Out - {msg}";
+            transferReporter.SecondaryReport($"TSFT - Out - {msg}");
             _log.Debug(msg);
 
          
@@ -30,7 +30,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
             ((SshConnexion)Connexion).DownloadFromServer(fo, currentFileToRead.File.AbsolutePath, bytesRead =>
             {
 
-                transfertReporter.Report((double)((long)bytesRead + read) / totalBytesToRead,
+                transferReporter.Report((double)((long)bytesRead + read) / totalBytesToRead,
                     CommonAppUtils.GetTransferSpeed((long)bytesRead, localStart));
             });
 

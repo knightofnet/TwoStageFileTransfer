@@ -89,7 +89,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     while (!currentFileToRead.Exists || AryxDevLibrary.utils.FileUtils.IsFileLocked(currentFileToRead))
                     {
                         fo.Flush();
-                        Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.FullName}";
+                        transferReporter.SecondaryReport($"TSFT - Out - Waiting for {currentFileToRead.FullName}");
                         transferReporter.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
                         Thread.Sleep(300);
                         currentFileToRead.Refresh();
@@ -101,7 +101,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     }
 
                     string msg = "Reading file " + currentFileToRead.Name;
-                    Console.Title = $"TSFT - Out - {msg}";
+                    transferReporter.SecondaryReport($"TSFT - Out - {msg}");
                     _log.Debug(msg);
 
                     DateTime localStart = DateTime.Now;

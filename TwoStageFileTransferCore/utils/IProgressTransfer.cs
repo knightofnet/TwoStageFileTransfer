@@ -7,5 +7,6 @@ namespace TwoStageFileTransferCore.utils
         void Report(double value, string text);
 
         void Init();
+        void SecondaryReport(string text);
     }
 }

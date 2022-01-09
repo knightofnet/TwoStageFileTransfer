@@ -34,93 +34,101 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
         public override void DoTransfert(IProgressTransfer transferReporter)
         {
-            long partFileMaxLenght = CalculatePartFileMaxLenght();
-
-            int fileCreatedIndex = InWorkOptions.StartPart;
-
-            HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
-
-            bool targetExist = true;
-            if (!Directory.Exists(InWorkOptions.Target))
+            try
             {
-                Directory.CreateDirectory(InWorkOptions.Target);
-                targetExist = Directory.Exists(InWorkOptions.Target);
-            }
-            if (!targetExist)
-            {
-                throw new DirectoryNotFoundException(
-                    $"Directory '{InWorkOptions.Target}' not found and impossible to create.");
-            }
+                long partFileMaxLenght = CalculatePartFileMaxLenght();
 
-            WarnForCompressedTargetDir(InWorkOptions.Target);
-            MainTestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
+                int fileCreatedIndex = InWorkOptions.StartPart;
 
-            string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
-            _log.Info($"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
-            ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
+                HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
 
-            Console.Write("Creating part files... ");
-            DateTime mainStart = DateTime.Now;
-            
-            transferReporter.Init();
-            using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
-            {
-                _buffer = new byte[InWorkOptions.BufferSize];
-
-                _totalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
-                fs.Seek(_totalBytesRead, SeekOrigin.Begin);
-                if (_totalBytesRead > 0)
+                bool targetExist = true;
+                if (!Directory.Exists(InWorkOptions.Target))
                 {
-                    transferReporter.Report((double)_totalBytesRead / fs.Length, "Resuming");
+                    Directory.CreateDirectory(InWorkOptions.Target);
+                    targetExist = Directory.Exists(InWorkOptions.Target);
+                }
+                if (!targetExist)
+                {
+                    throw new DirectoryNotFoundException(
+                        $"Directory '{InWorkOptions.Target}' not found and impossible to create.");
                 }
 
-                bool isFirstFileCreated = true;
-                while (_totalBytesRead < fs.Length)
+                WarnForCompressedTargetDir(InWorkOptions.Target);
+                MainTestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
+
+                string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
+                _log.Info($"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
+                ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
+
+                Console.Write("Creating part files... ");
+                DateTime mainStart = DateTime.Now;
+            
+                transferReporter.Init();
+                using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
                 {
+                    _buffer = new byte[InWorkOptions.BufferSize];
 
-                    AppFile fileOutPath = new AppFile(InWorkOptions.Target, FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex));
-
-                    DateTime localStart = DateTime.Now;
-
-
-                    long localBytesRead = WritePartFile(partFileMaxLenght, transferReporter, fs, fileOutPath, localStart, 3);
-
-                    fileOutPath.File.Attributes = FileAttributes.Hidden | FileAttributes.Archive |
-                                                  FileAttributes.Temporary | FileAttributes.NotContentIndexed;
-                    listFiles.Add(fileOutPath.File);
-                    _log.Debug("> OK");
-
-                    if (_totalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
+                    _totalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
+                    fs.Seek(_totalBytesRead, SeekOrigin.Begin);
+                    if (_totalBytesRead > 0)
                     {
-                        WaitForFreeSpace(listFiles);
+                        transferReporter.Report((double)_totalBytesRead / fs.Length, "Resuming");
                     }
 
-                    if (isFirstFileCreated)
+                    bool isFirstFileCreated = true;
+                    while (_totalBytesRead < fs.Length)
                     {
-                        TsftFileSecured tsftFileContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
-                            partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase);
-                        if (tsftFileContent != null)
-                        {
-                                
 
-                            InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
-                            File.WriteAllText(InWorkOptions.TsftFilePath, tsftFileContent.SecureContent, Encoding.UTF8);
+                        AppFile fileOutPath = new AppFile(InWorkOptions.Target, FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex));
+
+                        DateTime localStart = DateTime.Now;
+
+
+                        long localBytesRead = WritePartFile(partFileMaxLenght, transferReporter, fs, fileOutPath, localStart, 3);
+
+                        fileOutPath.File.Attributes = FileAttributes.Hidden | FileAttributes.Archive |
+                                                      FileAttributes.Temporary | FileAttributes.NotContentIndexed;
+                        listFiles.Add(fileOutPath.File);
+                        _log.Debug("> OK");
+
+                        if (_totalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
+                        {
+                            WaitForFreeSpace(listFiles, transferReporter);
                         }
 
+                        if (isFirstFileCreated)
+                        {
+                            TsftFileSecured tsftFileContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
+                                partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase);
+                            if (tsftFileContent != null)
+                            {
+                                
+
+                                InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
+                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftFileContent.SecureContent, Encoding.UTF8);
+                            }
+
+                        }
+
+                        LastPartDone = fileCreatedIndex;
+                        fileCreatedIndex++;
+                        isFirstFileCreated = false;
                     }
-
-                    LastPartDone = fileCreatedIndex;
-                    fileCreatedIndex++;
-                    isFirstFileCreated = false;
                 }
+                transferReporter.Dispose();
+
+                Console.WriteLine("Done.");
+                TimeSpan duration = DateTime.Now - mainStart;
+                _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
+
+                transferReporter.SecondaryReport(string.Empty);
             }
-            transferReporter.Dispose();
-
-            Console.WriteLine("Done.");
-            TimeSpan duration = DateTime.Now - mainStart;
-            _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
-
-            Console.Title = "";
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw e;
+            }
         }
 
         private long WritePartFile(long partFileMaxLenght, IProgressTransfer transferReporter, FileStream fs, AppFile fileOutPath, DateTime localStart, int nbTentative)
@@ -163,7 +171,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                     fo.SetLength(Math.Min(chunk, InWorkOptions.Source.Length - _totalBytesRead));
 
                     string msg = "Creating part file " + fileOutPath.File.Name;
-                    Console.Title = $"TSFT - In - {msg}";
+                    transferReporter.SecondaryReport($"TSFT - In - {msg}");
                     _log.Debug(msg);
 
                     Array.Clear(_buffer, 0, _buffer.Length);
@@ -274,7 +282,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
 
 
-        private void WaitForFreeSpace(HashSet<FileInfo> listFiles)
+        private void WaitForFreeSpace(HashSet<FileInfo> listFiles, IProgressTransfer transferReporter)
         {
             bool mustWriteLogStatus = true;
             long filesSize = listFiles.Where(r =>
@@ -295,7 +303,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                 filesSize = setFilesExist.Sum(f => f.Length);
 
-                Console.Title = $"TSFT - In - Waiting for OUT mode to work and freeing disk space...";
+                transferReporter.SecondaryReport($"TSFT - In - Waiting for OUT mode to work and freeing disk space...");
                 if (mustWriteLogStatus)
                 {
                     _log.Info("Waiting for OUT mode to work and freeing disk space : {0} + {1} > {2}", filesSize, InWorkOptions.BufferSize, InWorkOptions.MaxSizeUsedOnShared);

@@ -79,7 +79,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     while (!currentFileToRead.Exists(Connexion))
                     {
                         fo.Flush();
-                        Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}";
+                        transferReporter.SecondaryReport($"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}");
                         transferReporter.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i - 1}");
                         Thread.Sleep(300);
 
@@ -124,10 +124,10 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
 
         }
 
-        protected virtual long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transfertReporter, long totalBytesToRead)
+        protected virtual long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transferReporter, long totalBytesToRead)
         {
             string msg = "Reading file " + currentFileToRead.File.Segments.Last();
-            Console.Title = $"TSFT - Out - {msg}";
+            transferReporter.SecondaryReport($"TSFT - Out - {msg}");
             _log.Debug(msg);
 
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(currentFileToRead.File);
@@ -150,7 +150,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     totalBytesRead += bytesRead;
                     localBytesRead += bytesRead;
                     fo.Write(Buffer, 0, bytesRead);
-                    transfertReporter.Report((double)totalBytesRead / totalBytesToRead,
+                    transferReporter.Report((double)totalBytesRead / totalBytesToRead,
                         CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
                 }
             }

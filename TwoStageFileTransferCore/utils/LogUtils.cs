@@ -13,7 +13,7 @@ namespace TwoStageFileTransferCore.utils
                 Console.WriteLine(what);
             }
 
-            if (isWriteLog)
+            if (log != null && isWriteLog)
             {
                 log.Info(what);
             }
@@ -26,7 +26,7 @@ namespace TwoStageFileTransferCore.utils
                 Console.WriteLine(what);
             }
 
-            if (isWriteLog)
+            if (log != null && isWriteLog)
             {
                 log.Debug(what);
             }
@@ -39,7 +39,7 @@ namespace TwoStageFileTransferCore.utils
                 Console.WriteLine(what);
             }
 
-            if (isWriteLog)
+            if (log != null && isWriteLog)
             {
                 log.Error(what);
             }
@@ -53,7 +53,7 @@ namespace TwoStageFileTransferCore.utils
                 Console.WriteLine(what);
             }
 
-            if (isWriteLog)
+            if (log != null && isWriteLog)
             {
                 log.Warn(what);
             }

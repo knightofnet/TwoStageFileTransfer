@@ -15,7 +15,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
         }
 
-        protected override long WritePartFile(long chunk, IProgressTransfer transfertReporter, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
+        protected override long WritePartFile(long chunk, IProgressTransfer transferReporter, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
         {
             _log.Info("Using SSH :");
 
@@ -30,7 +30,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
 
                     string msg = "Creating part file " + fileOutPath.FileTemp.LocalPath;
-                    Console.Title = $"TSFT - In - {msg}";
+                    transferReporter.SecondaryReport($"TSFT - In - {msg}");
                     _log.Debug(msg);
 
                     Array.Clear(Buffer, 0, Buffer.Length);
@@ -42,7 +42,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                         localBytesRead += bytesRead;
 
                         fo.Write(Buffer, 0, bytesRead);
-                        transfertReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
+                        transferReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
 
 
                         if (localBytesRead + InWorkOptions.BufferSize > chunk ||
@@ -57,7 +57,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                     Connexion.UploadStreamToServer(fo, fileOutPath.FileTemp.AbsolutePath, InWorkOptions.CanOverwrite,
                         obj =>
                         {
-                            transfertReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed((long)obj, localStart));
+                            transferReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed((long)obj, localStart));
 
                         });
 
