@@ -16,9 +16,11 @@ using TwoStageFileTransfer.utils;
 using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
 using static TwoStageFileTransferCore.utils.LogUtils;
 using AryxDevLibrary.utils.logger;
-using TwoStageFileTransfer.exceptions;
+
 using TwoStageFileTransferCore.business.connexions;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.exceptions;
 using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.business
@@ -26,7 +28,7 @@ namespace TwoStageFileTransfer.business
     class AppParamatersReader
     {
         private static readonly Logger _log = Logger.LastLoggerInstance;
-        public AppArgs AppArgs { get; private set; }
+        public CmdAppArgs AppArgs { get; private set; }
 
         public AppArgsParser ArgsParser { get; private set; }
 
@@ -41,11 +43,11 @@ namespace TwoStageFileTransfer.business
         }
 
 
-        private AppArgs GetAppArgs(string[] args)
+        private CmdAppArgs GetAppArgs(string[] args)
         {
             string sourceProcessName = ProcessUtils.ParentProcessUtilities.GetParentProcess().ProcessName.ToLower();
 
-            AppArgs appArgs = null;
+            CmdAppArgs appArgs = null;
 
             try
             {
@@ -53,7 +55,7 @@ namespace TwoStageFileTransfer.business
                 string tsftFilePath = null;
                 if (args.Length == 1 && args[0].ToLower().EndsWith(".tsft"))
                 {
-                    appArgs = new AppArgs()
+                    appArgs = new CmdAppArgs()
                     { Direction = DirectionTrts.OUT, Source = args[0], TransferType = TransferTypes.Windows };
                     isTsftFile = true;
                     tsftFilePath = args[0];
@@ -152,7 +154,7 @@ namespace TwoStageFileTransfer.business
                         }
 
                         msgError +=
-                            $"Specify the -{AppArgsParser.OptFtpUser.ShortOpt} and -{AppArgsParser.OptFtpPassword.ShortOpt} parameters to make the connection possible.";
+                            $"Specify the -{CmdArgsOptions.OptFtpUser.ShortOpt} and -{CmdArgsOptions.OptFtpPassword.ShortOpt} parameters to make the connection possible.";
                         throw new CliParsingException(msgError);
                     }
 
@@ -237,7 +239,7 @@ namespace TwoStageFileTransfer.business
                 else
                 {
                     throw new CliParsingException(
-                        $"No passphrase entered to read tsftFile. Use parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt} to enter it.");
+                        $"No passphrase entered to read tsftFile. Use parameter -{CmdArgsOptions.OptTsftFilePassPhrase.ShortOpt} to enter it.");
                 }
                 tsftFile = DecryptTsft(appArgs, tsftFilePath, true);
             }
@@ -290,10 +292,9 @@ namespace TwoStageFileTransfer.business
             {
                 if (isThrowException)
                 {
-                    throw new AppException(
+                    throw new CommonAppException(
                         $"Can't decrypt TSFT {appArgs.Source}. Check the input. If not, you can enter it " +
-                        $"with the input parameter -{AppArgsParser.OptTsftFilePassPhrase.ShortOpt}.", ex,
-                        EnumExitCodes.KO_CHECK_BEFORE_TRT);
+                        $"with the input parameter -{CmdArgsOptions.OptTsftFilePassPhrase.ShortOpt}.", ex, CommonAppExceptReason.ErrorPreparingTreatment);
                 }
 
                 return null;

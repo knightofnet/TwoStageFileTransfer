@@ -1,8 +1,6 @@
-﻿using System;
-
-namespace TwoStageFileTransfer.dto
+﻿namespace TwoStageFileTransferCore.dto.transfer
 {
-    class InWorkOptions : CommonWorkOptions
+    public class InWorkOptions : CommonWorkOptions
     {
         public long MaxSizeUsedOnShared { get; set; }
 

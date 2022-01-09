@@ -1,8 +1,8 @@
 ﻿using AryxDevLibrary.utils.logger;
 
-namespace TwoStageFileTransfer.business
+namespace TwoStageFileTransferCore.business.transfer
 {
-    abstract class AbstractWork
+    public abstract class AbstractWork
     {
         protected static Logger _log = Logger.LastLoggerInstance ;
 

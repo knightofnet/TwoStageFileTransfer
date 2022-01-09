@@ -1,6 +1,6 @@
-﻿namespace TwoStageFileTransfer.dto
+﻿namespace TwoStageFileTransferCore.dto.transfer
 {
-    class OutWorkOptions : CommonWorkOptions
+    public class OutWorkOptions : CommonWorkOptions
     {
         public TsftFile Tsft => AppArgs.TsftFile;
 

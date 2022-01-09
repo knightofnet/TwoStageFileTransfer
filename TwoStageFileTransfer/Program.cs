@@ -4,14 +4,18 @@ using System.Reflection;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.logger;
 using TwoStageFileTransfer.business;
-using TwoStageFileTransfer.business.transferworkers;
-using TwoStageFileTransfer.business.transferworkers.inwork;
-using TwoStageFileTransfer.business.transferworkers.outwork;
 using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.exceptions;
+
 using TwoStageFileTransfer.utils;
+using TwoStageFileTransferCore.business.transfer;
+using TwoStageFileTransferCore.business.transfer.firststage;
+using TwoStageFileTransferCore.business.transfer.secondstage;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.exceptions;
+using TwoStageFileTransferCore.utils;
 using static TwoStageFileTransferCore.utils.LogUtils;
 using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 using ProcessUtils = TwoStageFileTransfer.utils.ProcessUtils;
@@ -72,32 +76,32 @@ namespace TwoStageFileTransfer
 
         }
 
-        private static void DoWork(AppArgs appArgs, AppArgsParser argsParser)
+        private static void DoWork(CmdAppArgs appArgs, AppArgsParser argsParser)
         {
             try
             {
                 switch (appArgs.Direction)
                 {
                     case DirectionTrts.IN:
-                        {
-                            I(_log, "First stage: transfer file from source to temp-shared folder");
+                    {
+                        I(_log, "First stage: transfer file from source to temp-shared folder");
 
-                            StartFirstStage(appArgs);
-                            break;
-                        }
+                        StartFirstStage(appArgs);
+                        break;
+                    }
                     case DirectionTrts.OUT:
-                        {
-                            I(_log, "Second stage: recompose target file from part files from shared folder");
+                    {
+                        I(_log, "Second stage: recompose target file from part files from shared folder");
 
-                            StartSecondStage(appArgs);
-                            break;
-                        }
+                        StartSecondStage(appArgs);
+                        break;
+                    }
                     default:
                         argsParser.ShowSyntax();
                         break;
                 }
             }
-            catch (AppException a)
+            catch (CommonAppException a)
             {
                 Console.WriteLine();
                 E(_log, "Error: " + a.Message);
@@ -108,7 +112,27 @@ namespace TwoStageFileTransfer
                     Console.Read();
                 }
 
-                Environment.Exit(a.ExitCode.Index);
+                EnumExitCodes exitCodes = EnumExitCodes.KO;
+                switch (a.ExceptReason)
+                {
+                    case CommonAppExceptReason.ErrorInStage:
+                        exitCodes = EnumExitCodes.KO_IN;
+                        break;
+                    case CommonAppExceptReason.ErrorOutStage:
+                        exitCodes = EnumExitCodes.KO_OUT;
+                        break;
+                    case CommonAppExceptReason.ErrorCheckParams:
+                        exitCodes = EnumExitCodes.KO_PARAMS_PARSING;
+                        break;
+                    case CommonAppExceptReason.ErrorInStageWritingPartFile:
+                        exitCodes = EnumExitCodes.KO_WRITING_PARTFILE;
+                        break;
+                    case CommonAppExceptReason.ErrorPreparingTreatment:
+                        exitCodes = EnumExitCodes.KO_CHECK_BEFORE_TRT;
+                        break;
+                }
+
+                Environment.Exit(exitCodes.Index);
             }
             catch (Exception e)
             {
@@ -173,7 +197,8 @@ namespace TwoStageFileTransfer
 
             try
             {
-                w.DoTransfert();
+                using (ProgressBar pbar = new ProgressBar())
+                    w.DoTransfert(pbar);
             }
             catch (Exception ex)
             {
@@ -211,7 +236,9 @@ namespace TwoStageFileTransfer
                 o = new SftpOutWork(_appParams.Connexion, jobOptions);
             }
 
-            o.DoTransfert();
+            using (ProgressBar pbar = new ProgressBar())
+                o.DoTransfert(pbar);
+
         }
 
         private static void AppHeader()

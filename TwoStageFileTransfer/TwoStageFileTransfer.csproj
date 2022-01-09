@@ -65,31 +65,14 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Assembly.tt</DependentUpon>
     </Compile>
-    <Compile Include="business\AbstractWork.cs" />
     <Compile Include="business\AppArgsParser.cs" />
     <Compile Include="business\AppParamatersReader.cs" />
     <Compile Include="business\moderuns\ExplorerRun.cs" />
-    <Compile Include="business\transferworkers\AbstractInWork.cs" />
-    <Compile Include="business\transferworkers\AbstractOutWork.cs" />
-    <Compile Include="business\transferworkers\inwork\FtpInWork.cs" />
-    <Compile Include="business\transferworkers\inwork\InToOutWork.cs" />
     <Compile Include="business\moderuns\AbstractModeRun.cs" />
     <Compile Include="business\moderuns\CmdRun.cs" />
-    <Compile Include="business\transferworkers\inwork\SftpInWork.cs" />
-    <Compile Include="business\transferworkers\outwork\FtpOutWork.cs" />
-    <Compile Include="business\transferworkers\outwork\OutToFileWork.cs" />
-    <Compile Include="business\transferworkers\outwork\SftpOutWork.cs" />
     <Compile Include="constant\EnumExitCodes.cs" />
     <Compile Include="constant\SourceRuns.cs" />
-    <Compile Include="dto\AppArgs.cs" />
-    <Compile Include="dto\AppFile.cs" />
-    <Compile Include="dto\AppFileFtp.cs" />
-    <Compile Include="dto\CommonWorkOptions.cs" />
-    <Compile Include="dto\InWorkOptions.cs" />
-    <Compile Include="dto\OutWorkOptions.cs" />
-    <Compile Include="dto\TsftFile.cs" />
-    <Compile Include="dto\TsftFileSecured.cs" />
-    <Compile Include="exceptions\AppException.cs" />
+    <Compile Include="dto\CmdAppArgs.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utils\AppUtils.cs" />
@@ -116,7 +99,9 @@
       <Name>TwoStageFileTransferCore</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="exceptions\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\TextTemplating\Microsoft.TextTemplating.targets" />
 </Project>

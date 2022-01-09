@@ -1,19 +1,18 @@
 ﻿using System;
-using System.Net;
 using AryxDevLibrary.utils;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.dto
+namespace TwoStageFileTransferCore.dto
 {
-    class AppFileFtp
+    public class AppFileFtp
     {
         public Uri File { get; }
 
         public Uri FileTemp { get; }
 
         public Uri DirectoryParent { get; }
-        public long Length { get; internal set; }
+        public long Length { get; set; }
 
         
 
@@ -25,8 +24,6 @@ namespace TwoStageFileTransfer.dto
 
             DirectoryParent = parent.ToUri();
 
-            
-
         }
 
         public bool Exists(IConnexion connexion, bool isTempFileToCheck = false)
@@ -36,6 +33,7 @@ namespace TwoStageFileTransfer.dto
                 return connexion.IsFileExists(FileTemp);
             }
             return connexion.IsFileExists(File);
+
         }
 
 

@@ -1,4 +1,5 @@
 ﻿using TwoStageFileTransfer.dto;
+using TwoStageFileTransferCore.dto;
 
 namespace TwoStageFileTransfer.business.moderuns
 {

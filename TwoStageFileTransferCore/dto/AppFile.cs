@@ -1,8 +1,8 @@
 ﻿using System.IO;
 
-namespace TwoStageFileTransfer.dto
+namespace TwoStageFileTransferCore.dto
 {
-    class AppFile
+    public class AppFile
     {
      
         public FileInfo File { get; }

@@ -3,6 +3,7 @@ using TwoStageFileTransfer.constant;
 using TwoStageFileTransfer.dto;
 using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
 using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.business.moderuns

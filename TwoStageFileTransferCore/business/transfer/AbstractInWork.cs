@@ -2,18 +2,16 @@
 using System.IO;
 using System.Xml;
 using System.Xml.Serialization;
-using AryxDevLibrary.utils;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.exceptions;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.exceptions;
 using TwoStageFileTransferCore.utils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
-namespace TwoStageFileTransfer.business.transferworkers
+namespace TwoStageFileTransferCore.business.transfer
 {
-    internal abstract class AbstractInWork : AbstractWork
+    public abstract class AbstractInWork : AbstractWork
     {
         public int LastPartDone { get; set; }
 
@@ -25,7 +23,7 @@ namespace TwoStageFileTransfer.business.transferworkers
             InWorkOptions = inWorkOptions;
         }
 
-        public abstract void DoTransfert();
+        public abstract void DoTransfert(IProgressTransfer transferReporter);
 
         protected abstract long CalculatePartFileMaxLenght();
 
@@ -74,7 +72,7 @@ namespace TwoStageFileTransfer.business.transferworkers
             catch (Exception ex)
             {
                 _log.Error($"Error while creating TSFT file: {ex.Message}");
-                throw new AppException($"Error while creating TSFT file: {ex.Message}", ex, EnumExitCodes.KO_IN);
+                throw new CommonAppException($"Error while creating TSFT file: {ex.Message}", ex, CommonAppExceptReason.ErrorInStage);
             }
 
 
@@ -89,8 +87,8 @@ namespace TwoStageFileTransfer.business.transferworkers
             }
             catch (Exception ex)
             {
-                throw new AppException($"Error when testing or deleting already existing files: {ex.Message}", ex,
-                    EnumExitCodes.KO_IN);
+                throw new CommonAppException($"Error when testing or deleting already existing files: {ex.Message}", ex,
+                    CommonAppExceptReason.ErrorInStage);
             }
         }
 

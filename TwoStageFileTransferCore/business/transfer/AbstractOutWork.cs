@@ -1,22 +1,21 @@
 ﻿using System.IO;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.exceptions;
+using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.exceptions;
+using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.business.transferworkers
+namespace TwoStageFileTransferCore.business.transfer
 {
-    internal abstract class AbstractOutWork : AbstractWork
+    public abstract class AbstractOutWork : AbstractWork
     {
         public OutWorkOptions Options { get; }
-
-
-
+        
         protected AbstractOutWork(OutWorkOptions outWorkOptions)
         {
             Options = outWorkOptions;
         }
 
-        public abstract void DoTransfert();
+        public abstract void DoTransfert(IProgressTransfer transferReporter);
 
 
         protected void TestFileAlreadyExists(FileInfo rTargetFile)
@@ -31,9 +30,9 @@ namespace TwoStageFileTransfer.business.transferworkers
                 }
                 else
                 {
-                    throw new AppException(
-                        $"Target file '{Options.Target}' already exists. Use parameter -{AppArgsParser.OptCanOverwrite.ShortOpt} to allow overwriting.",
-                        EnumExitCodes.KO_CHECK_BEFORE_TRT);
+                    throw new CommonAppException(
+                        $"Target file '{Options.Target}' already exists. Use parameter -{CmdArgsOptions.OptCanOverwrite.ShortOpt} to allow overwriting.",
+                        CommonAppExceptReason.ErrorPreparingTreatment);
                 }
             }
         }

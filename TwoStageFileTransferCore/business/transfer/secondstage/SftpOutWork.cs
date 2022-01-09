@@ -1,24 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.business.transferworkers.outwork
+namespace TwoStageFileTransferCore.business.transfer.secondstage
 {
-    class SftpOutWork : FtpOutWork
+    public class SftpOutWork : FtpOutWork
     {
         public SftpOutWork(IConnexion connexion, OutWorkOptions outWorkOptions) : base(connexion, outWorkOptions)
         {
 
         }
 
-        protected override long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, ProgressBar pbar, long totalBytesToRead)
+        protected override long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transfertReporter, long totalBytesToRead)
         {
             string msg = "Reading file " + currentFileToRead.File.Segments.Last();
             Console.Title = $"TSFT - Out - {msg}";
@@ -32,9 +29,9 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
             var read = totalBytesRead;
             ((SshConnexion)Connexion).DownloadFromServer(fo, currentFileToRead.File.AbsolutePath, bytesRead =>
             {
-              
-                pbar.Report((double)((long)bytesRead + read) / totalBytesToRead,
-                    AppUtils.GetTransferSpeed((long)bytesRead, localStart));
+
+                transfertReporter.Report((double)((long)bytesRead + read) / totalBytesToRead,
+                    CommonAppUtils.GetTransferSpeed((long)bytesRead, localStart));
             });
 
             totalBytesRead += fo.Position - currentFoPos;

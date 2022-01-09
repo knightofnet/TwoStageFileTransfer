@@ -56,13 +56,35 @@
     <Compile Include="business\connexions\FtpConnexion.cs" />
     <Compile Include="business\connexions\IConnexion.cs" />
     <Compile Include="business\connexions\SshConnexion.cs" />
+    <Compile Include="business\transfer\AbstractInWork.cs" />
+    <Compile Include="business\transfer\AbstractWork.cs" />
+    <Compile Include="business\transfer\firststage\FtpInWork.cs" />
+    <Compile Include="business\transfer\firststage\InToOutWork.cs" />
+    <Compile Include="business\transfer\firststage\SftpInWork.cs" />
+    <Compile Include="business\transfer\AbstractOutWork.cs" />
+    <Compile Include="business\transfer\secondstage\FtpOutWork.cs" />
+    <Compile Include="business\transfer\secondstage\OutToFileWork.cs" />
+    <Compile Include="business\transfer\secondstage\SftpOutWork.cs" />
     <Compile Include="constant\AppCst.cs" />
+    <Compile Include="constant\CmdArgsOptions.cs" />
+    <Compile Include="constant\CommonAppExceptReason.cs" />
     <Compile Include="constant\CredentialOrigins.cs" />
     <Compile Include="constant\DirectionTrts.cs" />
     <Compile Include="constant\TransferTypes.cs" />
+    <Compile Include="dto\AppArgs.cs" />
+    <Compile Include="dto\AppFile.cs" />
+    <Compile Include="dto\AppFileFtp.cs" />
+    <Compile Include="dto\transfer\OutWorkOptions.cs" />
+    <Compile Include="utils\CommonAppUtils.cs" />
+    <Compile Include="dto\transfer\CommonWorkOptions.cs" />
+    <Compile Include="dto\transfer\InWorkOptions.cs" />
+    <Compile Include="dto\TsftFile.cs" />
+    <Compile Include="dto\TsftFileSecured.cs" />
+    <Compile Include="exceptions\CommonAppException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="utils\FileUtils.cs" />
     <Compile Include="utils\FolderPicker.cs" />
+    <Compile Include="utils\IProgressTransfer.cs" />
     <Compile Include="utils\LogUtils.cs" />
     <Compile Include="utils\StringCypher.cs" />
   </ItemGroup>
@@ -75,5 +97,6 @@
       <LastGenOutput>Assembly.cs</LastGenOutput>
     </Content>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -1,18 +1,14 @@
 ﻿using System;
-using System.Data;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.exceptions;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto.transfer;
 using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.business.transferworkers.outwork
+namespace TwoStageFileTransferCore.business.transfer.secondstage
 {
-    class OutToFileWork : AbstractOutWork
+    public class OutToFileWork : AbstractOutWork
     {
         private FileInfo _firstFile ;
 
@@ -21,7 +17,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
         }
 
-        public override void DoTransfert()
+        public override void DoTransfert(IProgressTransfer transferReporter)
         {
             
 
@@ -76,7 +72,8 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
 
             Console.Write("Recomposing file... ");
             DateTime mainStart = DateTime.Now;
-            using (ProgressBar pbar = new ProgressBar())
+
+            transferReporter.Init();
             using (FileStream fo = new FileStream(targetFile.FullName, FileMode.Create))
             {
                 fo.SetLength(totalBytesToRead);
@@ -93,7 +90,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     {
                         fo.Flush();
                         Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.FullName}";
-                        pbar.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
+                        transferReporter.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
                         Thread.Sleep(300);
                         currentFileToRead.Refresh();
 
@@ -121,7 +118,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                             totalBytesRead += bytesRead;
                             localBytesRead += bytesRead;
                             fo.Write(buffer, 0, bytesRead);
-                            pbar.Report((double)totalBytesRead / totalBytesToRead, AppUtils.GetTransferSpeed(localBytesRead, localStart));
+                            transferReporter.Report((double)totalBytesRead / totalBytesToRead, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
                         }
                         
 
@@ -150,8 +147,9 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
             {
                 Options.Source.Delete();
             }
-
             targetFile.MoveTo(rTargetFile.FullName);
+
+            transferReporter.Dispose();
             Console.WriteLine("Done.");
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));

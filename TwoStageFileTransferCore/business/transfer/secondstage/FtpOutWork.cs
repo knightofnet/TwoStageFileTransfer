@@ -4,24 +4,23 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using AryxDevLibrary.utils;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.exceptions;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.business.connexions;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.utils;
 using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 
-namespace TwoStageFileTransfer.business.transferworkers.outwork
+namespace TwoStageFileTransferCore.business.transfer.secondstage
 {
-    class FtpOutWork : AbstractOutWork
+    public class FtpOutWork : AbstractOutWork
     {
-        protected long TotalBytesRead ;
+        protected long TotalBytesRead;
         protected byte[] Buffer;
 
-        protected  IConnexion Connexion;
+        protected IConnexion Connexion;
 
-        private AppFileFtp _firstFile ;
+        private AppFileFtp _firstFile;
 
         public FtpOutWork(IConnexion connexion, OutWorkOptions outWorkOptions) : base(outWorkOptions)
         {
@@ -29,7 +28,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
         }
 
 
-        public override void DoTransfert()
+        public override void DoTransfert(IProgressTransfer transferReporter)
         {
 
             long totalBytesRead = 0;
@@ -44,20 +43,6 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 finalFileName = Options.Tsft.Source.OriginalFilename;
                 sha1FinalFile = Options.Tsft.Sha1Hash;
 
-                /*
-                if (String.IsNullOrWhiteSpace(Connexion.UserName))
-                {
-                    Connexion = new NetworkCredential(Options.Tsft.TempDir.FtpUsername,
-                        Options.Tsft.TempDir.FtpPassword);
-                }
-
-                Uri serverHost = FtpUtils.GetRootUri(UriUtils.NewFtpUri(Options.Tsft.TempDir.Path));
-                if (!FtpUtils.IsOkToConnect(serverHost, Connexion))
-                {
-                    throw new Exception($"Unable to established a connexion to ${serverHost.AbsoluteUri}");
-                }
-                */
-
                 _firstFile = new AppFileFtp(Options.Tsft.TempDir.Path, TwoStageFileTransferCore.utils.FileUtils.GetFileName(finalFileName, totalBytesToRead, 0));
             }
             else
@@ -71,11 +56,12 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
             FileInfo targetFile = new FileInfo(Path.Combine(Options.Target, "~" + finalFileName));
             FileInfo rTargetFile = new FileInfo(Path.Combine(Options.Target, finalFileName));
             TestFileAlreadyExists(rTargetFile);
-            
+
 
             Console.Write("Recomposing file... ");
             DateTime mainStart = DateTime.Now;
-            using (ProgressBar pbar = new ProgressBar())
+
+            transferReporter.Init();
             using (FileStream fo = new FileStream(targetFile.FullName, FileMode.Create))
             {
                 fo.SetLength(totalBytesToRead);
@@ -90,11 +76,11 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                 {
 
                     TimeSpan nowBeforeWait = DateTime.Now.TimeOfDay;
-                    while (!currentFileToRead.Exists(Connexion) )
+                    while (!currentFileToRead.Exists(Connexion))
                     {
                         fo.Flush();
                         Console.Title = $"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}";
-                        pbar.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i - 1}");
+                        transferReporter.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i - 1}");
                         Thread.Sleep(300);
 
                         if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
@@ -103,7 +89,7 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                         }
                     }
 
-                    totalBytesRead = ReadPartFile(currentFileToRead, totalBytesRead, fo, pbar, totalBytesToRead);
+                    totalBytesRead = ReadPartFile(currentFileToRead, totalBytesRead, fo, transferReporter, totalBytesToRead);
 
                     currentFileToRead = new AppFileFtp(Options.Tsft.TempDir.Path, TwoStageFileTransferCore.utils.FileUtils.GetFileName(finalFileName, totalBytesToRead, i++));
 
@@ -126,18 +112,19 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     Connexion.DeleteFile(remoteTsftFile);
                 }
             }
-
             targetFile.MoveTo(rTargetFile.FullName);
+
+            transferReporter.Dispose();
             Console.WriteLine("Done.");
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
             TwoStageFileTransferCore.utils.FileUtils.CalculculateSourceSha1(targetFile, sha1FinalFile);
 
-          
+
         }
 
-        protected virtual long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, ProgressBar pbar, long totalBytesToRead)
+        protected virtual long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transfertReporter, long totalBytesToRead)
         {
             string msg = "Reading file " + currentFileToRead.File.Segments.Last();
             Console.Title = $"TSFT - Out - {msg}";
@@ -163,8 +150,8 @@ namespace TwoStageFileTransfer.business.transferworkers.outwork
                     totalBytesRead += bytesRead;
                     localBytesRead += bytesRead;
                     fo.Write(Buffer, 0, bytesRead);
-                    pbar.Report((double)totalBytesRead / totalBytesToRead,
-                        AppUtils.GetTransferSpeed(localBytesRead, localStart));
+                    transfertReporter.Report((double)totalBytesRead / totalBytesToRead,
+                        CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
                 }
             }
 

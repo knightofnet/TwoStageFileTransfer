@@ -1,19 +1,23 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Text;
 using System.Threading;
+using TwoStageFileTransferCore.utils;
 
 namespace TwoStageFileTransfer.utils
 {
 	/// <summary>
 	/// An ASCII progress bar
 	/// </summary>
-	public class ProgressBar : IDisposable //, IProgress<double>
+	public class ProgressBar : IProgressTransfer //, IProgress<double>
 	{
+        public bool IsInitialized { get; private set; }
+
 		private const int blockCount = 10;
 		private readonly TimeSpan animationInterval = TimeSpan.FromSeconds(1.0 / 4);
 		private const string animation = @"|/-\";
 
-		private readonly Timer timer;
+		private Timer timer;
 
 		private double currentProgress ;
 		private string currentProgressText = string.Empty;
@@ -23,19 +27,30 @@ namespace TwoStageFileTransfer.utils
 
 		public ProgressBar()
 		{
-			timer = new Timer(TimerHandler);
 
-			// A progress bar is only for temporary display in a console window.
-			// If the console output is redirected to a file, draw nothing.
-			// Otherwise, we'll end up with a lot of garbage in the target file.
-			if (!Console.IsOutputRedirected)
-			{
-				ResetTimer();
-			}
 		}
 
-		public void Report(double value, string text)
-		{
+        public void Init()
+        {
+            timer = new Timer(TimerHandler);
+
+            // A progress bar is only for temporary display in a console window.
+            // If the console output is redirected to a file, draw nothing.
+            // Otherwise, we'll end up with a lot of garbage in the target file.
+            if (!Console.IsOutputRedirected)
+            {
+                ResetTimer();
+            }
+
+            IsInitialized = true;
+        }
+
+        
+
+        public void Report(double value, string text)
+        {
+            if (!IsInitialized) throw new Exception("ProgressBar not initialized");
+
 			// Make sure value is in [0..1] range
 			value = Math.Max(0, Math.Min(1, value));
 			Interlocked.Exchange(ref currentProgress, value);

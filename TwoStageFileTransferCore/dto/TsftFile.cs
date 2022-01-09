@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Xml.Serialization;
-using AryxDevLibrary.utils;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.dto
+namespace TwoStageFileTransferCore.dto
 {
 
     [Serializable]

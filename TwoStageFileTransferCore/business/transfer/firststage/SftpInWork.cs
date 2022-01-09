@@ -1,21 +1,21 @@
 ﻿using System;
 using System.IO;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.business.connexions;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.utils;
 
-namespace TwoStageFileTransfer.business.transferworkers.inwork
+namespace TwoStageFileTransferCore.business.transfer.firststage
 {
-    class SftpInWork : FtpInWork
+    public class SftpInWork : FtpInWork
     {
         public SftpInWork(IConnexion connexion, InWorkOptions inWorkOptions) : base(connexion, inWorkOptions)
         {
 
         }
 
-        protected override long WritePartFile(long chunk, ProgressBar pbar, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
+        protected override long WritePartFile(long chunk, IProgressTransfer transfertReporter, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
         {
             _log.Info("Using SSH :");
 
@@ -42,7 +42,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                         localBytesRead += bytesRead;
 
                         fo.Write(Buffer, 0, bytesRead);
-                        pbar.Report((double)TotalBytesRead / fs.Length, AppUtils.GetTransferSpeed(localBytesRead, localStart));
+                        transfertReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
 
 
                         if (localBytesRead + InWorkOptions.BufferSize > chunk ||
@@ -57,7 +57,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                     Connexion.UploadStreamToServer(fo, fileOutPath.FileTemp.AbsolutePath, InWorkOptions.CanOverwrite,
                         obj =>
                         {
-                            pbar.Report((double)TotalBytesRead / fs.Length, AppUtils.GetTransferSpeed((long)obj, localStart));
+                            transfertReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed((long)obj, localStart));
 
                         });
 

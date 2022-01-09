@@ -6,19 +6,18 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using AryxDevLibrary.utils;
-using TwoStageFileTransfer.constant;
-using TwoStageFileTransfer.dto;
-using TwoStageFileTransfer.exceptions;
-using TwoStageFileTransfer.utils;
 using TwoStageFileTransferCore.business.connexions;
 using TwoStageFileTransferCore.constant;
+using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.exceptions;
 using TwoStageFileTransferCore.utils;
 using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 
-namespace TwoStageFileTransfer.business.transferworkers.inwork
+namespace TwoStageFileTransferCore.business.transfer.firststage
 {
-    class FtpInWork : AbstractInWork
+    public class FtpInWork : AbstractInWork
     {
         protected long TotalBytesRead;
         protected byte[] Buffer;
@@ -33,7 +32,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
         }
 
-        public override void DoTransfert()
+        public override void DoTransfert(IProgressTransfer transferReporter)
         {
             _log.Info("Using FTP :");
 
@@ -66,63 +65,64 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
 
             Console.Write("Creating part files... ");
             DateTime mainStart = DateTime.Now;
-            using (ProgressBar pbar = new ProgressBar())
+
+            transferReporter.Init();
+            using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
             {
-                using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
+                Buffer = new byte[InWorkOptions.BufferSize];
+
+                TotalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
+                fs.Seek(TotalBytesRead, SeekOrigin.Begin);
+                if (TotalBytesRead > 0)
                 {
-                    Buffer = new byte[InWorkOptions.BufferSize];
+                    transferReporter.Report((double)TotalBytesRead / fs.Length, "Resuming");
+                }
 
-                    TotalBytesRead = InWorkOptions.StartPart * partFileMaxLenght;
-                    fs.Seek(TotalBytesRead, SeekOrigin.Begin);
-                    if (TotalBytesRead > 0)
+                bool isFirstFileCreated = true;
+                while (TotalBytesRead < fs.Length)
+                {
+                    string filenameOut = TwoStageFileTransferCore.utils.FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex);
+                    AppFileFtp fileFtp = new AppFileFtp(InWorkOptions.Target, filenameOut);
+
+
+
+                    DateTime localStart = DateTime.Now;
+
+                    long localBytesRead = WritePartFile(partFileMaxLenght, transferReporter, fs, fileFtp, localStart, 3);
+
+
+                    listFiles.Add(fileFtp);
+                    _log.Debug("> OK");
+
+                    if (TotalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
                     {
-                        pbar.Report((double)TotalBytesRead / fs.Length, "Resuming");
+                        WaitForFreeSpace(listFiles);
                     }
 
-                    bool isFirstFileCreated = true;
-                    while (TotalBytesRead < fs.Length)
+                    if (isFirstFileCreated)
                     {
-                        string filenameOut = TwoStageFileTransferCore.utils.FileUtils.GetFileName(InWorkOptions.Source.Name, fs.Length, fileCreatedIndex);
-                        AppFileFtp fileFtp = new AppFileFtp(InWorkOptions.Target, filenameOut);
 
-
-
-                        DateTime localStart = DateTime.Now;
-
-                        long localBytesRead = WritePartFile(partFileMaxLenght, pbar, fs, fileFtp, localStart, 3);
-
-
-                        listFiles.Add(fileFtp);
-                        _log.Debug("> OK");
-
-                        if (TotalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
+                        TsftFileSecured tsftContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length, partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase,
+                            IncludeMoreThingsInTsftFile);
+                        if (tsftContent != null)
                         {
-                            WaitForFreeSpace(listFiles);
+                            InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Source.Directory.FullName, InWorkOptions.Source.Name + ".tsft");
+                            File.WriteAllText(InWorkOptions.TsftFilePath, tsftContent.SecureContent, Encoding.UTF8);
+
+                            Connexion.UploadFileToServer(fileFtp.DirectoryParent.AbsolutePath,
+                                new FileInfo(InWorkOptions.TsftFilePath));
+
+
                         }
-
-                        if (isFirstFileCreated)
-                        {
-
-                            TsftFileSecured tsftContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length, partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase,
-                                IncludeMoreThingsInTsftFile);
-                            if (tsftContent != null)
-                            {
-                                InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Source.Directory.FullName, InWorkOptions.Source.Name + ".tsft");
-                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftContent.SecureContent, Encoding.UTF8);
-
-                                Connexion.UploadFileToServer(fileFtp.DirectoryParent.AbsolutePath,
-                                    new FileInfo(InWorkOptions.TsftFilePath));
-
-
-                            }
-                        }
-
-                        LastPartDone = fileCreatedIndex;
-                        fileCreatedIndex++;
-                        isFirstFileCreated = false;
                     }
+
+                    LastPartDone = fileCreatedIndex;
+                    fileCreatedIndex++;
+                    isFirstFileCreated = false;
                 }
             }
+            transferReporter.Dispose();
+
             Console.WriteLine("Done.");
             TimeSpan duration = DateTime.Now - mainStart;
             _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
@@ -176,14 +176,14 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
             LogUtils.I(_log, $"Part file size: {AFileUtils.HumanReadableSize(partFileMaxLenght)}");
             return partFileMaxLenght;
         }
-        private long WritePartFile(long partFileMaxLenght, ProgressBar pbar, FileStream fs, AppFileFtp fileOutPath, DateTime localStart, int nbTentative)
+        private long WritePartFile(long partFileMaxLenght, IProgressTransfer transferReporter, FileStream fs, AppFileFtp fileOutPath, DateTime localStart, int nbTentative)
         {
 
             while (nbTentative > 0)
             {
                 try
                 {
-                    return WritePartFile(partFileMaxLenght, pbar, fs, fileOutPath, localStart);
+                    return WritePartFile(partFileMaxLenght, transferReporter, fs, fileOutPath, localStart);
 
                 }
                 catch (Exception e)
@@ -191,12 +191,12 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                     nbTentative--;
                     if (nbTentative <= 0)
                     {
-                        throw new AppException("Error while writing part file", e, EnumExitCodes.KO_WRITING_PARTFILE);
+                        throw new CommonAppException("Error while writing part file", e, CommonAppExceptReason.ErrorInStageWritingPartFile);
                     }
 
                     _log.Info("Error while writing part file. Re-try in 30s");
                     Thread.Sleep(30 * 1000);
-                    pbar.Report((double)TotalBytesRead / fs.Length, "Retry");
+                    transferReporter.Report((double)TotalBytesRead / fs.Length, "Retry");
                 }
 
             }
@@ -204,7 +204,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
         }
 
 
-        protected virtual long WritePartFile(long chunk, ProgressBar pbar, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
+        protected virtual long WritePartFile(long chunk, IProgressTransfer transferReporter, FileStream fs, AppFileFtp fileOutPath, DateTime localStart)
         {
             long localBytesRead = 0;
 
@@ -236,7 +236,7 @@ namespace TwoStageFileTransfer.business.transferworkers.inwork
                         localBytesRead += bytesRead;
 
                         fo.Write(Buffer, 0, bytesRead);
-                        pbar.Report((double)TotalBytesRead / fs.Length, AppUtils.GetTransferSpeed(localBytesRead, localStart));
+                        transferReporter.Report((double)TotalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
 
 
                         if (localBytesRead + InWorkOptions.BufferSize > chunk ||

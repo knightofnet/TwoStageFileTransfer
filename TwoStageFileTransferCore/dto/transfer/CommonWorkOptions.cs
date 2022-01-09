@@ -1,10 +1,10 @@
 ﻿using System.IO;
 
-namespace TwoStageFileTransfer.dto
+namespace TwoStageFileTransferCore.dto.transfer
 {
-    class CommonWorkOptions
+    public class CommonWorkOptions
     {
-        public AppArgs AppArgs { get; internal set; }
+        public AppArgs AppArgs { get; set; }
         public FileInfo Source => new FileInfo(AppArgs.Source);
         public string Target => AppArgs.Target;
 
