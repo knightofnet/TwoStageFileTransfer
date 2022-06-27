@@ -1,4 +1,4 @@
-﻿<Page x:Class="TwoStageFileTransferGUI.views.pages.SendFileOptionsPage"
+﻿<Page x:Class="TwoStageFileTransferGUI.views.pages.send.SendFileOptionsPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -23,14 +23,15 @@
         <Label x:Name="label" Content="Comment souhaitez-vous envoyer le fichier ?" HorizontalAlignment="Left" Margin="10,10,0,0" Grid.Row="1" VerticalAlignment="Top" FontWeight="Bold"/>
         <RadioButton x:Name="rbByWindows" Content="En passant par un dossier partagé." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,41,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <RadioButton x:Name="rbByFTP" Content="En utilisant un serveur FTP." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,61,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <RadioButton x:Name="rbBySFTP" Content="En utilisant un serveur SFTP." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,81,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <RadioButton x:Name="rbBySFTP" IsEnabled="False" Content="En utilisant un serveur SFTP." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,81,0,0" Grid.Row="1" VerticalAlignment="Top"/>
 
-        <GroupBox x:Name="gpSendWindowsParams" Header="Envoi en passant par un dossier partagé : " VerticalAlignment="Top" Margin="10,142,10,0"  Grid.Row="1" Height="85" >
+        <GroupBox x:Name="gpSendWindowsParams" Header="Envoi en passant par un dossier partagé : " VerticalAlignment="Top" Margin="10,142,10,0"  Grid.Row="1" Height="116" >
             <Grid >
 
                 <Label x:Name="label_Copy" Content="Sélectionnez l'emplacement du dossier partagé :" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Normal"/>
                 <TextBox x:Name="tboxFilePath" HorizontalAlignment="Left" Margin="0,31,0,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Width="403" Height="23" />
-                <Button x:Name="btnBrowseForAfile" Content="Parcourir" HorizontalAlignment="Right" Margin="0,31,10,0" VerticalAlignment="Top" Height="23" Width="75" />
+                <Button x:Name="btnBrowseForAfile" Content="Parcourir" HorizontalAlignment="Right" Margin="0,31,10,0" VerticalAlignment="Top" Height="23" Width="75" Click="btnBrowseForAfile_Click" />
+                <Label x:Name="lblClickNext" Content="Cliquez sur Envoyer pour continuer." HorizontalAlignment="Left" Margin="0,59,0,0" VerticalAlignment="Top"/>
 
             </Grid>
         </GroupBox>

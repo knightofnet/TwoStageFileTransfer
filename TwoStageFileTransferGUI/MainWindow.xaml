@@ -5,17 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TwoStageFileTransferGUI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="525" ResizeMode="NoResize">
+        Title="MainWindow" Height="450" Width="560" ResizeMode="NoResize">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="9*"/>
-            <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
-        <Button x:Name="btnPrev" Content="Précédent" Margin="0,0,90,0" Grid.Row="1" VerticalAlignment="Center" Height="23" HorizontalAlignment="Right" Width="75" Click="btnPrev_Click"/>
-        <Button x:Name="btnNext" Content="Suivant" Margin="440,0,10,0" Grid.Row="1" VerticalAlignment="Center" Height="23" Click="btnNext_Click"/>
+        <Frame x:Name="mainFrame" Margin="10,0,10,0"  />
 
-        <Frame x:Name="mainFrame" Margin="20,0,0,0" />
+        <Rectangle Fill="#FFF4F4F5" Margin="0,0.4,-0.4,0" Grid.Row="1" StrokeThickness="0"/>
+
+
+        <Button x:Name="btnPrev" Content="Précédent" Margin="0,0,100,0" Grid.Row="1" VerticalAlignment="Center" Height="23" Click="btnPrev_Click" HorizontalAlignment="Right" Width="75"/>
+        <Button x:Name="btnNext" Content="Suivant" Margin="440,0,10,0" Grid.Row="1" VerticalAlignment="Center" Height="23" Click="btnNext_Click" HorizontalAlignment="Right" Width="75" />
+
 
     </Grid>
 </Window>

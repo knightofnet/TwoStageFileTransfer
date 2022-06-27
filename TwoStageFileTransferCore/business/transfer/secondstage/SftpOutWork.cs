@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using TwoStageFileTransferCore.business.connexions;
+using TwoStageFileTransferCore.constant;
 using TwoStageFileTransferCore.dto;
 using TwoStageFileTransferCore.dto.transfer;
 using TwoStageFileTransferCore.utils;
@@ -18,7 +19,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
         protected override long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transferReporter, long totalBytesToRead)
         {
             string msg = "Reading file " + currentFileToRead.File.Segments.Last();
-            transferReporter.SecondaryReport($"TSFT - Out - {msg}");
+            transferReporter.OnProgress($"TSFT - Out - {msg}");
             _log.Debug(msg);
 
          
@@ -30,8 +31,8 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
             ((SshConnexion)Connexion).DownloadFromServer(fo, currentFileToRead.File.AbsolutePath, bytesRead =>
             {
 
-                transferReporter.Report((double)((long)bytesRead + read) / totalBytesToRead,
-                    CommonAppUtils.GetTransferSpeed((long)bytesRead, localStart));
+                transferReporter.OnProgress(CommonAppUtils.GetTransferSpeed((long)bytesRead, localStart), (double)((long)bytesRead + read) / totalBytesToRead,
+                    BckgerReportType.ProgressPbarText);
             });
 
             totalBytesRead += fo.Position - currentFoPos;

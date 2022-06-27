@@ -120,7 +120,7 @@ namespace TwoStageFileTransfer.business
                             throw new CliParsingException($"Remote path invalid ('{remotePath}') for FTP.");
                         }
 
-
+                       
                         Uri rootUri = UriUtils.GetRootUri(uriSource);
                         Connexion = new FtpConnexion(creds, rootUri);
 
@@ -135,6 +135,8 @@ namespace TwoStageFileTransfer.business
 
                         Connexion = new SshConnexion(creds, uriSource.Host, uriSource.Port);
                     }
+
+                    appArgs.RemotePort = uriSource.Port;
 
                     if (!Connexion.IsOkToConnect())
                     {
@@ -228,7 +230,7 @@ namespace TwoStageFileTransfer.business
                 appArgs.TsftPassphrase = AppCst.DefaultPassPhrase;
             }
 
-            TsftFile tsftFile = DecryptTsft(appArgs, tsftFilePath, appArgs.TransferType != TransferTypes.Windows);
+            TsftFile tsftFile = CommonAppUtils.DecryptTsft(appArgs, tsftFilePath, appArgs.TransferType != TransferTypes.Windows);
             if (tsftFile == null)
             {
                 Console.WriteLine("Enter passphrase to decrypt TSFT file:");
@@ -241,7 +243,7 @@ namespace TwoStageFileTransfer.business
                     throw new CliParsingException(
                         $"No passphrase entered to read tsftFile. Use parameter -{CmdArgsOptions.OptTsftFilePassPhrase.ShortOpt} to enter it.");
                 }
-                tsftFile = DecryptTsft(appArgs, tsftFilePath, true);
+                tsftFile = CommonAppUtils.DecryptTsft(appArgs, tsftFilePath, true);
             }
 
             switch (tsftFile.TempDir.Type)
@@ -268,38 +270,7 @@ namespace TwoStageFileTransfer.business
             return remotePath;
         }
 
-        private static TsftFile DecryptTsft(AppArgs appArgs, string tsftFilePath, bool isThrowException = true)
-        {
-            try
-            {
-                if (appArgs.TsftPassphrase == null)
-                {
-                    throw new Exception("Passphrase not set");
-                }
-
-                String configFile = File.ReadAllText(tsftFilePath, Encoding.UTF8);
-                configFile = StringCipher.Decrypt(configFile, appArgs.TsftPassphrase);
-
-                TsftFile tsftFile;
-                using (TextReader reader = new StringReader(configFile))
-                {
-                    tsftFile = (TsftFile)new XmlSerializer(typeof(TsftFile)).Deserialize(reader);
-                }
-
-                return tsftFile;
-            }
-            catch (CryptographicException ex)
-            {
-                if (isThrowException)
-                {
-                    throw new CommonAppException(
-                        $"Can't decrypt TSFT {appArgs.Source}. Check the input. If not, you can enter it " +
-                        $"with the input parameter -{CmdArgsOptions.OptTsftFilePassPhrase.ShortOpt}.", ex, CommonAppExceptReason.ErrorPreparingTreatment);
-                }
-
-                return null;
-            }
-        }
+ 
 
         private static bool IsValidUri(string remotePath, TransferTypes transferType)
         {

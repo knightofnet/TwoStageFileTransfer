@@ -1,0 +1,71 @@
+﻿<Window x:Class="TwoStageFileTransferGUI.views.SendOptionsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TwoStageFileTransferGUI.views"
+        mc:Ignorable="d"
+        Title="SendOptionsView" Height="502.8" Width="716" FontSize="11" >
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="271*"/>
+            <ColumnDefinition Width="522*"/>
+        </Grid.ColumnDefinitions>
+        <GroupBox x:Name="groupBox" Header="Source et cible " Height="138" Margin="10,10,9.6,0" VerticalAlignment="Top" Grid.ColumnSpan="2">
+            <Grid>
+                <Label  Content="Sélectionnez l'emplacement du dossier partagé :" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Normal"/>
+                <TextBox x:Name="tboxFilePath" Margin="0,24,90.4,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Height="23" />
+                <Button x:Name="btnBrowseForAfile" Content="Parcourir" HorizontalAlignment="Right" Margin="0,24,10.4,0" VerticalAlignment="Top" Height="23" Width="75" />
+
+                <Label Content="Sélectionnez le dossier intermédiaire :" HorizontalAlignment="Left" VerticalAlignment="Top" FontWeight="Normal" Margin="0,52,0,0"/>
+                <TextBox x:Name="tboxTargetPath" Margin="0,76,90.4,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Height="23" />
+                <Button x:Name="btnBrowseForAFolder" Content="Parcourir" HorizontalAlignment="Right" Margin="0,76,10.4,0" VerticalAlignment="Top" Height="23" Width="75" />
+            </Grid>
+        </GroupBox>
+        <GroupBox x:Name="groupBox_Copy" Header="Informations de session " Margin="4.6,153,9.6,0" Grid.Column="1" Height="172" VerticalAlignment="Top">
+            <Grid >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <Label x:Name="label1" Content="Nom d'hôte" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="0,3,3,3" Margin="10,10,0,0" FontSize="10"/>
+                <TextBox x:Name="tbHote" Margin="10,29,5,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Height="23" Grid.ColumnSpan="2" />
+
+                <Label Content="Numéro de port" HorizontalAlignment="Left" Margin="0,10,0,0" VerticalAlignment="Top" Padding="0,3,3,3" Grid.Column="2" FontSize="10"/>
+                <TextBox x:Name="tbPort" Margin="0,29,10,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Height="23" Grid.Column="2"/>
+
+                <Label Content="Nom d'utilisateur" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="0,3,3,3" Margin="10,57,0,0" FontSize="10"/>
+                <TextBox x:Name="tbUsername" Margin="10,78,4,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Height="23"/>
+
+                <Label Content="Mot de passe" HorizontalAlignment="Left" Margin="0,57,0,0" VerticalAlignment="Top" Padding="0,3,3,3" FontSize="10" Grid.Column="1"/>
+                <TextBox x:Name="tbPassword" Margin="0,78,10,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top" Height="23" Grid.ColumnSpan="2" Grid.Column="1"/>
+
+                <Button x:Name="btnTest" Content="Tester" HorizontalAlignment="Right" Margin="0,0,10.2,10.4" VerticalAlignment="Bottom" Grid.Column="2" Width="75" Height="23" />
+            </Grid>
+        </GroupBox>
+        <GroupBox x:Name="groupBox1" Header="Mode de transfert " Height="172" Margin="10,153,5,0" VerticalAlignment="Top">
+            <Grid>
+                <RadioButton x:Name="rbByWindows" Content="En passant par un dossier partagé." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
+                <RadioButton x:Name="rbByFTP" Content="En utilisant un serveur FTP." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,29,0,0" VerticalAlignment="Top"/>
+                <RadioButton x:Name="rbBySFTP" Content="En utilisant un serveur SFTP." GroupName="modeTransfer" HorizontalAlignment="Left" Margin="10,48,0,0" VerticalAlignment="Top"/>
+
+            </Grid>
+        </GroupBox>
+        <GroupBox x:Name="groupBox2" Header="Options " Height="117" Margin="10,330,9.6,0" VerticalAlignment="Top" Grid.ColumnSpan="2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+                <CheckBox x:Name="chkSaveInTsftFile" Content="Sauvegarder les informations de connexion dans le fichier TSFT" HorizontalAlignment="Left" Margin="10,10,0,0" FontSize="10"  VerticalAlignment="Top" />
+                <CheckBox x:Name="chkOverwrite" Content="Ecraser les fichiers déjà présents" HorizontalAlignment="Left" Margin="10,29,0,0" FontSize="10"  VerticalAlignment="Top" />
+                <CheckBox x:Name="checkBox" Content="Phrase de protection du fichier TSFT aléatoire" Grid.Column="1" HorizontalAlignment="Left" Margin="5,10,0,0" VerticalAlignment="Top"/>
+                <TextBox x:Name="tbPassPhrase" Grid.Column="1" Height="23" Margin="30,29,10,0" TextWrapping="NoWrap" Text="" VerticalAlignment="Top"/>
+
+            </Grid>
+        </GroupBox>
+
+    </Grid>
+</Window>

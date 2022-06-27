@@ -1,0 +1,32 @@
+﻿<Window x:Class="TwoStageFileTransferGUI.views.MoreSendOptionsView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TwoStageFileTransferGUI.views"
+        mc:Ignorable="d"
+        Title="Options d'envoi" Height="307.675" Width="276.744" ResizeMode="NoResize">
+    <Grid>
+        <Label  Content="Options :" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top" FontWeight="Bold"/>
+        <Grid Margin="10,41,86.4,188.4">
+            <Label Content="Taille maximale à utiliser :" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            <TextBox x:Name="tboxMaxFileSize" HorizontalAlignment="Left" Margin="0,26,0,0" TextWrapping="Wrap" Text="" Width="120"/>
+
+
+        </Grid>
+
+        <CheckBox x:Name="chkOverwriteShared"  HorizontalAlignment="Left" Margin="10,149,0,0" VerticalAlignment="Top">
+            <AccessText TextWrapping="Wrap">Ecraser les fichiers sur le dossier de partage ou le serveur distant</AccessText>
+        </CheckBox>
+        <Grid Margin="10,95,86.4,134.4">
+            <Label Content="Taille des fichiers de transferts :" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+            <TextBox x:Name="tboxMaxFilePartSize" HorizontalAlignment="Left" Margin="0,26,0,0" TextWrapping="Wrap" Text="" Width="120"/>
+
+
+        </Grid>
+
+        <Button x:Name="btnCancel" Content="Annuler" HorizontalAlignment="Right" Margin="0,0,92.4,10.4" VerticalAlignment="Bottom" Width="75" Height="23" Click="btnCancel_Click"/>
+        <Button x:Name="btnOk" Content="OK" HorizontalAlignment="Right" Margin="0,0,12.4,10.4" VerticalAlignment="Bottom" Width="75" Height="23" Click="btnOk_Click"/>
+
+    </Grid>
+</Window>

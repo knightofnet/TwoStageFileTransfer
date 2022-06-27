@@ -2,16 +2,17 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
 using System.Windows.Controls;
+using TwoStageFileTransferCore.business.connexions;
 using TwoStageFileTransferCore.business.transfer;
 using TwoStageFileTransferCore.business.transfer.firststage;
 using TwoStageFileTransferCore.constant;
 using TwoStageFileTransferCore.dto;
 using TwoStageFileTransferCore.dto.transfer;
+using TwoStageFileTransferCore.exceptions;
 using TwoStageFileTransferCore.utils;
-using TwoStageFileTransferGUI.constant;
+using TwoStageFileTransferCore.utils.events;
 using TwoStageFileTransferGUI.dto;
 using TwoStageFileTransferGUI.utils;
 
@@ -20,11 +21,17 @@ namespace TwoStageFileTransferGUI.business
     internal class SendFileBackgrounder
     {
 
-        
-        public AppArgs AppArgs { get; set; }
-        public ProgressBar UiProgressBar { get; set; }
 
-        public Label UiProgressText { get; set; }
+        public AppArgs AppArgs { get; set; }
+
+        public Action<object, ProgressChangedEventArgs> BckEvent { get; set; }
+
+        public Action<Exception> OnError { get; set; }
+
+
+
+
+
 
         public BackgroundWorker Bck { get; set; }
 
@@ -32,19 +39,23 @@ namespace TwoStageFileTransferGUI.business
         {
             Bck = new BackgroundWorker();
             Bck.WorkerReportsProgress = true;
-            Bck.ProgressChanged += BckOnProgressChanged;
+            Bck.ProgressChanged += BckOnBckEventRaised;
 
             Bck.WorkerSupportsCancellation = true;
+
+            Bck.RunWorkerCompleted += BckOnRunWorkerCompleted;
+
 
             Bck.DoWork += BckOnDoWork;
 
         }
 
+
         private void BckOnDoWork(object sender, DoWorkEventArgs e)
         {
 
             long maxTransferLenght = AppArgs.MaxDiskPlaceToUse;
-            if (maxTransferLenght == -1)
+            if (maxTransferLenght <= 0)
             {
                 if (AppArgs.TransferType == TransferTypes.Windows)
                 {
@@ -57,42 +68,65 @@ namespace TwoStageFileTransferGUI.business
                 }
             }
 
+            if (AppArgs.ChunkSize <= 0)
+            {
+                AppArgs.ChunkSize = -1;
+            }
+
+            if (string.IsNullOrWhiteSpace(AppArgs.TsftPassphrase))
+            {
+                AppArgs.TsftPassphrase = AppWords.GetNWords(4).Aggregate((c, s) => $"{c} {s}");
+            }
+
             InWorkOptions jobOptions = new InWorkOptions()
             {
                 AppArgs = AppArgs,
                 MaxSizeUsedOnShared = maxTransferLenght,
+                NbMinWaitForFreeSpace = 60,
+                
+                
             };
 
             AbstractInWork w = null;
-            if (AppArgs.TransferType == TransferTypes.Windows)
+            switch (AppArgs.TransferType)
             {
-                w = new InToOutWork(jobOptions);
-            }
-            else if (AppArgs.TransferType == TransferTypes.FTP)
-            {
-               // w = new FtpInWork(_appParams.Connexion, jobOptions);
-            }
-            else if (AppArgs.TransferType == TransferTypes.SFTP)
-            {
-             //   w = new SftpInWork(_appParams.Connexion, jobOptions);
-            }
+                case TransferTypes.Windows:
+                    w = new InToOutWork(jobOptions);
+                    break;
 
-            Action<double, string> actionReport = (d, s) =>
-            {
-                BckgerReportObj reporter = new BckgerReportObj();
-                reporter.Text = s;
-                reporter.PercentProgressed = (int)d;
-                if (double.IsNaN(d))
-                {
-                    reporter.Type = BckgerReportType.TextOnly;
-                }
-                Bck.ReportProgress(0, reporter);
-            };
+                case TransferTypes.FTP:
+                    {
+                        UriBuilder uriBuilder = new UriBuilder();
+                        uriBuilder.Scheme = "ftp";
+                        uriBuilder.Host = AppArgs.RemoteHost;
+                        uriBuilder.Port = AppArgs.RemotePort;
+
+                        IConnexion con = new FtpConnexion(
+                            new NetworkCredential(AppArgs.FtpUser, AppArgs.FtpPassword),
+                            uriBuilder.Uri);
+
+                        w = new FtpInWork(con, jobOptions);
+                        break;
+
+                    }
+                case TransferTypes.SFTP:
+                    //IConnexion con = new SFtpConnexion();
+                    //w = new SftpInWork(con.Connexion, jobOptions);
+                    break;
+
+            }
 
             try
             {
-               using (AppProgressBar pbar = new AppProgressBar(actionReport))
+                using (AppProgressBar pbar = new AppProgressBar())
+                {
+                    pbar.TsftFileCreated += WorkTsftFileCreated;
+                    pbar.Progress += WorkReportProgress;
+                    pbar.CheckIsCanceled += () => Bck.CancellationPending;
+
+
                     w.DoTransfert(pbar);
+                }
             }
             catch (Exception ex)
             {
@@ -101,13 +135,54 @@ namespace TwoStageFileTransferGUI.business
             }
         }
 
-        private void BckOnProgressChanged(object sender, ProgressChangedEventArgs e)
+        private void WorkTsftFileCreated(object sender, TsftFileCreatedArgs args)
         {
-            BckgerReportObj report = e.UserState as BckgerReportObj;
-            if (report == null) return;
+            BckgerReportObj reporter = new BckgerReportObj
+            {
+                Type = BckgerReportType.TsftFileCreated,
+                Object = args
+            };
 
-            UiProgressBar.Value = report.PercentProgressed;
-            UiProgressText.Content = report.Text;
+            Bck.ReportProgress(int.MinValue, reporter);
+        }
+
+        private void WorkReportProgress(string text, double percent, BckgerReportType type)
+        {
+            BckgerReportObj reporter = new BckgerReportObj
+            {
+                Text = text,
+                PercentProgressed = percent,
+                Type = type
+            };
+
+            Bck.ReportProgress(int.MinValue, reporter);
+        }
+
+        private void BckOnRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            if (e.Error == null)
+            {
+                BckgerReportObj reporter = new BckgerReportObj
+                {
+                    Text = "Transfert terminé",
+                    PercentProgressed = 100,
+                    Type = BckgerReportType.Finished
+                };
+
+                BckEvent?.Invoke(sender, new ProgressChangedEventArgs(int.MinValue, reporter));
+            }
+            else
+            {
+
+                OnError?.Invoke(e.Error);
+
+            }
+        }
+
+        private void BckOnBckEventRaised(object sender, ProgressChangedEventArgs e)
+        {
+
+            BckEvent?.Invoke(sender, e);
         }
     }
 }

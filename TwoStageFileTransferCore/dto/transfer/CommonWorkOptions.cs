@@ -15,5 +15,12 @@ namespace TwoStageFileTransferCore.dto.transfer
         public int StartPart => AppArgs.ResumePart;
 
         public string TsftPassphrase => AppArgs.TsftPassphrase;
+
+        public double NbMinWaitForFreeSpace { get; set; }
+
+        public CommonWorkOptions()
+        {
+            NbMinWaitForFreeSpace = 5;
+        }
     }
 }

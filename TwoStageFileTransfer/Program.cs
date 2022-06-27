@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.Remoting.Messaging;
 using AryxDevLibrary.utils;
 using AryxDevLibrary.utils.logger;
 using TwoStageFileTransfer.business;
@@ -182,23 +183,26 @@ namespace TwoStageFileTransfer
             };
 
             AbstractInWork w = null;
-            if (appArgs.TransferType == TransferTypes.Windows)
+            switch (appArgs.TransferType)
             {
-                w = new InToOutWork(jobOptions);
-            }
-            else if (appArgs.TransferType == TransferTypes.FTP)
-            {
-                w = new FtpInWork(_appParams.Connexion, jobOptions);
-            }
-            else if (appArgs.TransferType == TransferTypes.SFTP)
-            {
-                w = new SftpInWork(_appParams.Connexion, jobOptions);
+                case TransferTypes.Windows:
+                    w = new InToOutWork(jobOptions);
+                    break;
+                case TransferTypes.FTP:
+                    w = new FtpInWork(_appParams.Connexion, jobOptions);
+                    break;
+                case TransferTypes.SFTP:
+                    w = new SftpInWork(_appParams.Connexion, jobOptions);
+                    break;
             }
 
             try
             {
                 using (ProgressBar pbar = new ProgressBar())
+                {
+                    pbar.CheckIsCanceled = () => false;
                     w.DoTransfert(pbar);
+                }
             }
             catch (Exception ex)
             {
@@ -215,6 +219,8 @@ namespace TwoStageFileTransfer
 
         }
 
+
+
         private static void StartSecondStage(AppArgs appArgs)
         {
             OutWorkOptions jobOptions = new OutWorkOptions()
@@ -223,17 +229,17 @@ namespace TwoStageFileTransfer
             };
 
             AbstractOutWork o = null;
-            if (appArgs.TransferType == TransferTypes.Windows)
+            switch (appArgs.TransferType)
             {
-                o = new OutToFileWork(jobOptions);
-            }
-            else if (appArgs.TransferType == TransferTypes.FTP)
-            {
-                o = new FtpOutWork(_appParams.Connexion, jobOptions);
-            }
-            else if (appArgs.TransferType == TransferTypes.SFTP)
-            {
-                o = new SftpOutWork(_appParams.Connexion, jobOptions);
+                case TransferTypes.Windows:
+                    o = new OutToFileWork(jobOptions);
+                    break;
+                case TransferTypes.FTP:
+                    o = new FtpOutWork(_appParams.Connexion, jobOptions);
+                    break;
+                case TransferTypes.SFTP:
+                    o = new SftpOutWork(_appParams.Connexion, jobOptions);
+                    break;
             }
 
             using (ProgressBar pbar = new ProgressBar())

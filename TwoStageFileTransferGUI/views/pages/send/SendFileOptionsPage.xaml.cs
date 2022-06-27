@@ -1,23 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using TwoStageFileTransferCore.constant;
 using TwoStageFileTransferCore.dto;
-using TwoStageFileTransferGUI.utils;
+using TwoStageFileTransferGUI.dto;
+using TwoStageFileTransferGUI.views.pages.shared;
 
-namespace TwoStageFileTransferGUI.views.pages
+namespace TwoStageFileTransferGUI.views.pages.send
 {
     /// <summary>
     /// Logique d'interaction pour TplPage.xaml
@@ -26,6 +17,8 @@ namespace TwoStageFileTransferGUI.views.pages
     {
         private TransferTypes _currentSelected = TransferTypes.None;
         public MainWindow.IActionsWindow MainWindow { get; set; }
+        public PageProperties PageProperties { get; set; }
+
         public SendFileOptionsPage()
         {
             InitializeComponent();
@@ -62,42 +55,20 @@ namespace TwoStageFileTransferGUI.views.pages
             rbByFTP.Click += AdaptUiAtMode;
             rbBySFTP.Click += AdaptUiAtMode;
 
-            MainWindow.ToggleNextButton(Directory.Exists(tboxFilePath.Text), "Envoyer");
+            MainWindow.ToggleNextButton(Directory.Exists(tboxFilePath.Text));
 
-            tboxFilePath.LostFocus += (sender, args) =>
-            {
-
-                String filepath = tboxFilePath.Text;
-                MainWindow.ToggleNextButton(Directory.Exists(filepath), "Envoyer");
-            };
+            tboxFilePath.LostFocus += AdaptUiAtMode;
 
 
         }
 
-        private void AdaptUiAtMode(object sender, RoutedEventArgs e)
-        {
-            gpSendWindowsParams.IsEnabled = rbByWindows.IsChecked ?? false;
-
-            if (rbByWindows.IsChecked ?? false)
-            {
-                _currentSelected = TransferTypes.Windows;
-            }
-            else if (rbByFTP.IsChecked ?? false)
-            {
-                _currentSelected = TransferTypes.FTP;
-            }
-            else if (rbBySFTP.IsChecked ?? false)
-            {
-                _currentSelected = TransferTypes.SFTP;
-            }
-        }
 
         public bool CanGoNext(AppArgs appArgs, out IPageApp nextPageApp)
         {
             if (_currentSelected == TransferTypes.Windows)
             {
-                String dirPath = tboxFilePath.Text;
-                if (String.IsNullOrEmpty(dirPath))
+                string dirPath = tboxFilePath.Text?.Trim('"');
+                if (string.IsNullOrEmpty(dirPath))
                 {
                     MessageBox.Show("Veuillez entrer l'emplacement du dossier partagé.",
                         "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -116,12 +87,20 @@ namespace TwoStageFileTransferGUI.views.pages
                     return false;
                 }
 
-                nextPageApp = new SendFilePage();
+                appArgs.Target = dirPath;
+                appArgs.TransferType = TransferTypes.Windows;
+               
             }
-            else
+            else 
             {
-                nextPageApp = new RemoteOptionsPage();
+                appArgs.TransferType = _currentSelected;
+              
             }
+
+            PageProperties nextPageProperties = MainWindow.ArianeTrtPath.NextPageProperties(PageProperties.Name, appArgs);
+            nextPageApp = nextPageProperties.CreateNextPageInstance();
+            nextPageApp.PageProperties = nextPageProperties;
+
 
             return true;
         }
@@ -131,7 +110,54 @@ namespace TwoStageFileTransferGUI.views.pages
             //throw new NotImplementedException();
         }
 
+        public void LoadSettingsPage(IPageSettings genPs)
+        {
+            //throw new NotImplementedException();
+        }
 
 
+        private void AdaptUiAtMode(object sender, RoutedEventArgs e)
+        {
+            gpSendWindowsParams.IsEnabled = rbByWindows.IsChecked ?? false;
+            MainWindow.ToggleNextButton(true);
+
+            if (rbByWindows.IsChecked ?? false)
+            {
+                _currentSelected = TransferTypes.Windows;
+
+                string filepath = tboxFilePath.Text?.Trim('"');
+                MainWindow.ToggleNextButton(Directory.Exists(filepath), "Envoyer");
+
+                lblClickNext.Visibility = Visibility.Visible;
+
+            }
+            else if (rbByFTP.IsChecked ?? false)
+            {
+                _currentSelected = TransferTypes.FTP;
+                MainWindow.ToggleNextButton(true);
+                lblClickNext.Visibility = Visibility.Collapsed;
+            }
+            else if (rbBySFTP.IsChecked ?? false)
+            {
+                _currentSelected = TransferTypes.SFTP;
+                MainWindow.ToggleNextButton(true);
+                lblClickNext.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void btnBrowseForAfile_Click(object sender, RoutedEventArgs e)
+        {
+            CommonOpenFileDialog openFolderDialog = new CommonOpenFileDialog
+            {
+                Multiselect = false,
+                IsFolderPicker = true,
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+            };
+
+            if (openFolderDialog.ShowDialog() != CommonFileDialogResult.Ok) return;
+
+            tboxFilePath.Text = openFolderDialog.FileName;
+            AdaptUiAtMode(null, null);
+        }
     }
 }

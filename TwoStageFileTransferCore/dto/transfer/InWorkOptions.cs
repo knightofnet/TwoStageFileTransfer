@@ -8,7 +8,6 @@
 
 
         public string TsftFilePath { get; set; }
-
         
     }
 }

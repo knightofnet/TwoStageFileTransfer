@@ -2,7 +2,9 @@
 using System.ComponentModel;
 using System.Text;
 using System.Threading;
+using TwoStageFileTransferCore.constant;
 using TwoStageFileTransferCore.utils;
+using TwoStageFileTransferCore.utils.events;
 
 namespace TwoStageFileTransfer.utils
 {
@@ -30,6 +32,11 @@ namespace TwoStageFileTransfer.utils
 
 		}
 
+        public event TsftFileCreated TsftFileCreated;
+        public event Action<double, string> WorkReportProgress;
+        public event Action<string, double, BckgerReportType> Progress;
+        public Func<bool> CheckIsCanceled { get; set; }
+
         public void Init()
         {
             timer = new Timer(TimerHandler);
@@ -45,9 +52,27 @@ namespace TwoStageFileTransfer.utils
             IsInitialized = true;
         }
 
-        public void SecondaryReport(string text)
+        public void OnTsftFileCreated(TsftFileCreatedArgs args)
         {
-            Console.Title = text;
+            
+        }
+
+        public void OnProgress(string text, double percentDone = double.NaN, BckgerReportType bclReportType = BckgerReportType.ProgressTextOnly)
+		{
+            switch (bclReportType)
+            {
+				case BckgerReportType.ProgressPbarText:
+                case BckgerReportType.ProgressPbarOnly:
+					Report(percentDone, text ?? string.Empty);
+					break;
+				case BckgerReportType.ProgressTextOnly:
+                    Console.Title = text ;
+                    break;
+
+            }
+
+            
+			//Progress?.Invoke(text, percentDone, bclReportType);
         }
 
 
@@ -124,6 +149,7 @@ namespace TwoStageFileTransfer.utils
 			}
 		}
 
-	}
+        
+    }
 
 }

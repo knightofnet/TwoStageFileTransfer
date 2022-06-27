@@ -1,15 +1,21 @@
 ﻿using TwoStageFileTransferCore.dto;
+using TwoStageFileTransferGUI.dto;
 
 namespace TwoStageFileTransferGUI.views
 {
     public interface IPageApp
     {
+        MainWindow.IActionsWindow MainWindow { get; set; }
+        PageProperties PageProperties { get; set; }
+
+
         bool CanGoNext(AppArgs appArgs, out IPageApp nextPageApp);
 
-        void Navigate(AppArgs appArg, bool isNavigateBack = false);
+        void Navigate(AppArgs appArgs, bool isNavigateBack = false);
 
         void UpdArgsAndGotoPrevious(AppArgs appArgs);
-        MainWindow.IActionsWindow MainWindow { get; set; }
+       
 
+        void LoadSettingsPage(IPageSettings genPs);
     }
 }

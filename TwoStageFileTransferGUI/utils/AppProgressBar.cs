@@ -4,37 +4,50 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using TwoStageFileTransferCore.constant;
 using TwoStageFileTransferCore.utils;
+using TwoStageFileTransferCore.utils.events;
+using TwoStageFileTransferGUI.dto;
 
 namespace TwoStageFileTransferGUI.utils
 {
     public class AppProgressBar : IProgressTransfer
     {
-        private readonly Action<double, string> _actionReport;
+        public event TsftFileCreated TsftFileCreated;
 
+        public event Action<string, double, BckgerReportType> Progress;
+        public Func<bool> CheckIsCanceled { get; set; }
+ 
 
-        public AppProgressBar(Action<double, string> actionReport)
+        public AppProgressBar()
         {
-            _actionReport = actionReport;
-        }
-        public void Dispose()
-        {
-            _actionReport(100, "");
+       
         }
 
-        public void Report(double value, string text)
-        {
-            _actionReport(value, text);
-        }
+        
 
         public void Init()
         {
-            _actionReport(0, "");
+            OnProgress(String.Empty, 0, BckgerReportType.ProgressPbarText );
         }
 
-        public void SecondaryReport(string text)
+        public void Dispose()
         {
-            _actionReport(Double.NaN, text);
+            OnProgress( String.Empty, 100, BckgerReportType.ProgressPbarText);
+        }
+
+
+
+        public void OnTsftFileCreated(TsftFileCreatedArgs args)
+        {
+            TsftFileCreated?.Invoke(this, args);
+        }
+
+
+        public virtual void OnProgress(string text, double percent, BckgerReportType bckType)
+        {
+           
+            Progress?.Invoke(text, percent * 100, bckType);
         }
     }
 }

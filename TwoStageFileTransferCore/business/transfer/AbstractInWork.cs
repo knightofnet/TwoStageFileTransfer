@@ -13,6 +13,9 @@ namespace TwoStageFileTransferCore.business.transfer
 {
     public abstract class AbstractInWork : AbstractWork
     {
+        protected long TotalBytesToRead { get; set; }
+        protected long TotalBytesRead;
+
         public int LastPartDone { get; set; }
 
 
@@ -23,7 +26,7 @@ namespace TwoStageFileTransferCore.business.transfer
             InWorkOptions = inWorkOptions;
         }
 
-        public abstract void DoTransfert(IProgressTransfer transferReporter);
+        public abstract void DoTransfert(IProgressTransfer reporter);
 
         protected abstract long CalculatePartFileMaxLenght();
 
@@ -34,7 +37,7 @@ namespace TwoStageFileTransferCore.business.transfer
 
 
         protected TsftFileSecured GetTransferExchangeFileContent(string sourceName, long sourceLength, long partFileMaxLenght,
-            string sha1, string inPassphrase = null,  Action<TsftFile> moreActionOnTsft = null)
+            string sha1, string inPassphrase = null, Action<TsftFile> moreActionOnTsft = null)
         {
             try
             {
@@ -65,9 +68,9 @@ namespace TwoStageFileTransferCore.business.transfer
                     }
                 }
 
-                string passPhrase = inPassphrase ;
+                string passPhrase = inPassphrase;
                 return new TsftFileSecured()
-                    { PassPhrase = passPhrase, SecureContent = StringCipher.Encrypt(xml, passPhrase) };
+                { PassPhrase = passPhrase, SecureContent = StringCipher.Encrypt(xml, passPhrase) };
             }
             catch (Exception ex)
             {

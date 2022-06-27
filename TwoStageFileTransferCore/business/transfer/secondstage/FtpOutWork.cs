@@ -79,11 +79,12 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     while (!currentFileToRead.Exists(Connexion))
                     {
                         fo.Flush();
-                        transferReporter.SecondaryReport($"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}");
-                        transferReporter.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i - 1}");
+                        transferReporter.OnProgress($"TSFT - Out - Waiting for {currentFileToRead.File.AbsolutePath}");
+                        transferReporter.OnProgress($"waiting for part {i - 1}", (double)totalBytesRead / totalBytesToRead,
+                            BckgerReportType.ProgressPbarText);
                         Thread.Sleep(300);
 
-                        if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
+                        if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(Options.NbMinWaitForFreeSpace))
                         {
                             throw new Exception($"Waits too long time for {currentFileToRead.File.AbsolutePath}");
                         }
@@ -127,7 +128,7 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
         protected virtual long ReadPartFile(AppFileFtp currentFileToRead, long totalBytesRead, FileStream fo, IProgressTransfer transferReporter, long totalBytesToRead)
         {
             string msg = "Reading file " + currentFileToRead.File.Segments.Last();
-            transferReporter.SecondaryReport($"TSFT - Out - {msg}");
+            transferReporter.OnProgress($"TSFT - Out - {msg}");
             _log.Debug(msg);
 
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(currentFileToRead.File);
@@ -150,8 +151,8 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     totalBytesRead += bytesRead;
                     localBytesRead += bytesRead;
                     fo.Write(Buffer, 0, bytesRead);
-                    transferReporter.Report((double)totalBytesRead / totalBytesToRead,
-                        CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
+                    transferReporter.OnProgress(CommonAppUtils.GetTransferSpeed(localBytesRead, localStart), (double)totalBytesRead / totalBytesToRead,
+                        BckgerReportType.ProgressPbarText);
                 }
             }
 

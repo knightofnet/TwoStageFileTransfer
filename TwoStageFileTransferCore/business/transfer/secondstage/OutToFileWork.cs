@@ -89,19 +89,20 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                     while (!currentFileToRead.Exists || AryxDevLibrary.utils.FileUtils.IsFileLocked(currentFileToRead))
                     {
                         fo.Flush();
-                        transferReporter.SecondaryReport($"TSFT - Out - Waiting for {currentFileToRead.FullName}");
-                        transferReporter.Report((double)totalBytesRead / totalBytesToRead, $"waiting for part {i}");
+                        transferReporter.OnProgress($"TSFT - Out - Waiting for {currentFileToRead.FullName}");
+                        transferReporter.OnProgress($"waiting for part {i}", (double)totalBytesRead / totalBytesToRead,
+                            BckgerReportType.ProgressPbarText);
                         Thread.Sleep(300);
                         currentFileToRead.Refresh();
 
-                        if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
+                        if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(Options.NbMinWaitForFreeSpace))
                         {
                             throw new Exception($"Waits too long time for {currentFileToRead.FullName}");
                         }
                     }
 
                     string msg = "Reading file " + currentFileToRead.Name;
-                    transferReporter.SecondaryReport($"TSFT - Out - {msg}");
+                    transferReporter.OnProgress($"TSFT - Out - {msg}");
                     _log.Debug(msg);
 
                     DateTime localStart = DateTime.Now;
@@ -118,7 +119,8 @@ namespace TwoStageFileTransferCore.business.transfer.secondstage
                             totalBytesRead += bytesRead;
                             localBytesRead += bytesRead;
                             fo.Write(buffer, 0, bytesRead);
-                            transferReporter.Report((double)totalBytesRead / totalBytesToRead, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
+                            transferReporter.OnProgress(CommonAppUtils.GetTransferSpeed(localBytesRead, localStart), (double)totalBytesRead / totalBytesToRead,
+                                BckgerReportType.ProgressPbarText);
                         }
                         
 

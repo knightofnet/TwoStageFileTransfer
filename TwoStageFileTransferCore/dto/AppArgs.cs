@@ -28,6 +28,8 @@ namespace TwoStageFileTransferCore.dto
         public string RemoteHost { get;  set; }
         public int RemotePort { get;  set; }
         public string TsftPassphrase { get; set; }
+
+
       
 
         public AppArgs()

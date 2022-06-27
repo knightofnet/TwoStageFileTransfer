@@ -10,6 +10,7 @@ using TwoStageFileTransferCore.dto;
 using TwoStageFileTransferCore.dto.transfer;
 using TwoStageFileTransferCore.exceptions;
 using TwoStageFileTransferCore.utils;
+using TwoStageFileTransferCore.utils.events;
 using AFileUtils = AryxDevLibrary.utils.FileUtils;
 using FileUtils = TwoStageFileTransferCore.utils.FileUtils;
 
@@ -18,21 +19,15 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
     public class InToOutWork : AbstractInWork
     {
 
-
-        //private readonly long _maxTransferFile;
-        //private readonly long _chunkSize;
-
         private long _totalBytesRead ;
         private byte[] _buffer;
-
-
 
         public InToOutWork(InWorkOptions inWorkOptions) : base(inWorkOptions)
         {
 
         }
 
-        public override void DoTransfert(IProgressTransfer transferReporter)
+        public override void DoTransfert(IProgressTransfer reporter)
         {
             try
             {
@@ -40,7 +35,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                 int fileCreatedIndex = InWorkOptions.StartPart;
 
-                HashSet<FileInfo> listFiles = new HashSet<FileInfo>();
+                ISet<FileInfo> listFiles = new HashSet<FileInfo>();
 
                 bool targetExist = true;
                 if (!Directory.Exists(InWorkOptions.Target))
@@ -58,13 +53,18 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                 MainTestFilesNotAlreadyExist(InWorkOptions.Source, InWorkOptions.Target, partFileMaxLenght, !InWorkOptions.CanOverwrite);
 
                 string sha1 = FileUtils.CalculculateSourceSha1(InWorkOptions.Source);
+                
                 _log.Info($"Passphrase for TSFT file: {InWorkOptions.TsftPassphrase}.");
                 ConsoleUtils.WriteLineColor($"Passphrase for TSFT file: <*cyan*>{InWorkOptions.TsftPassphrase}<*/*>");
 
                 Console.Write("Creating part files... ");
                 DateTime mainStart = DateTime.Now;
-            
-                transferReporter.Init();
+
+
+                #region Tranfert
+                // Transfert
+
+                reporter.Init();
                 using (FileStream fs = new FileStream(InWorkOptions.Source.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, InWorkOptions.BufferSize, FileOptions.SequentialScan))
                 {
                     _buffer = new byte[InWorkOptions.BufferSize];
@@ -73,10 +73,11 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                     fs.Seek(_totalBytesRead, SeekOrigin.Begin);
                     if (_totalBytesRead > 0)
                     {
-                        transferReporter.Report((double)_totalBytesRead / fs.Length, "Resuming");
+                        reporter.OnProgress("Resuming", (double)_totalBytesRead / fs.Length,
+                            BckgerReportType.ProgressPbarText);
                     }
 
-                    bool isFirstFileCreated = true;
+                    bool isFirstIteration = true;
                     while (_totalBytesRead < fs.Length)
                     {
 
@@ -85,7 +86,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                         DateTime localStart = DateTime.Now;
 
 
-                        long localBytesRead = WritePartFile(partFileMaxLenght, transferReporter, fs, fileOutPath, localStart, 3);
+                        long localBytesRead = WritePartFile(partFileMaxLenght, reporter, fs, fileOutPath, localStart, 3);
 
                         fileOutPath.File.Attributes = FileAttributes.Hidden | FileAttributes.Archive |
                                                       FileAttributes.Temporary | FileAttributes.NotContentIndexed;
@@ -94,35 +95,39 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                         if (_totalBytesRead + InWorkOptions.BufferSize > InWorkOptions.MaxSizeUsedOnShared)
                         {
-                            WaitForFreeSpace(listFiles, transferReporter);
+                            WaitForFreeSpace(listFiles, reporter);
                         }
 
-                        if (isFirstFileCreated)
+                        if (isFirstIteration)
                         {
-                            TsftFileSecured tsftFileContent = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
+                            TsftFileSecured tsftFile = GetTransferExchangeFileContent(InWorkOptions.Source.Name, InWorkOptions.Source.Length,
                                 partFileMaxLenght, sha1, InWorkOptions.TsftPassphrase);
-                            if (tsftFileContent != null)
+                            if (tsftFile != null)
                             {
-                                
-
                                 InWorkOptions.TsftFilePath = Path.Combine(InWorkOptions.Target, InWorkOptions.Source.Name + ".tsft");
-                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftFileContent.SecureContent, Encoding.UTF8);
+                                File.WriteAllText(InWorkOptions.TsftFilePath, tsftFile.SecureContent, Encoding.UTF8);
+
+                                reporter.OnTsftFileCreated(
+                                    new TsftFileCreatedArgs() { Filepath = InWorkOptions.TsftFilePath, Passphrase = tsftFile.PassPhrase });
                             }
 
                         }
 
                         LastPartDone = fileCreatedIndex;
                         fileCreatedIndex++;
-                        isFirstFileCreated = false;
+                        isFirstIteration = false;
                     }
                 }
-                transferReporter.Dispose();
+                reporter.Dispose();
 
                 Console.WriteLine("Done.");
                 TimeSpan duration = DateTime.Now - mainStart;
                 _log.Info("> Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
-                transferReporter.SecondaryReport(string.Empty);
+                // [FIN] Transfert
+                #endregion
+
+                reporter.OnProgress(string.Empty);
             }
             catch (Exception e)
             {
@@ -151,7 +156,8 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                     _log.Info("Error while writing part file. Re-try in 30s");
                     Thread.Sleep(30 * 1000);
-                    transferReporter.Report((double)_totalBytesRead / fs.Length, "Retry");
+                    transferReporter.OnProgress("Retry", (double)_totalBytesRead / fs.Length,
+                        BckgerReportType.ProgressPbarText);
 
                 }
 
@@ -159,7 +165,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
             return 0;
         }
 
-        private long WritePartFile(long chunk, IProgressTransfer transferReporter, FileStream fs, AppFile fileOutPath, DateTime localStart)
+        private long WritePartFile(long chunk, IProgressTransfer reporter, FileStream fs, AppFile fileOutPath, DateTime localStart)
         {
             long localBytesRead = 0;
 
@@ -171,7 +177,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                     fo.SetLength(Math.Min(chunk, InWorkOptions.Source.Length - _totalBytesRead));
 
                     string msg = "Creating part file " + fileOutPath.File.Name;
-                    transferReporter.SecondaryReport($"TSFT - In - {msg}");
+                    reporter.OnProgress($"TSFT - In - {msg}");
                     _log.Debug(msg);
 
                     Array.Clear(_buffer, 0, _buffer.Length);
@@ -193,7 +199,8 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                 }
 
-                transferReporter.Report((double)_totalBytesRead / fs.Length, CommonAppUtils.GetTransferSpeed(localBytesRead, localStart));
+                reporter.OnProgress(CommonAppUtils.GetTransferSpeed(localBytesRead, localStart), (double)_totalBytesRead / fs.Length,
+                    BckgerReportType.ProgressPbarText);
 
                 fileOutPath.MoveToNormal();
             }
@@ -282,7 +289,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
 
 
-        private void WaitForFreeSpace(HashSet<FileInfo> listFiles, IProgressTransfer transferReporter)
+        private void WaitForFreeSpace(ISet<FileInfo> listFiles, IProgressTransfer reporter)
         {
             bool mustWriteLogStatus = true;
             long filesSize = listFiles.Where(r =>
@@ -303,7 +310,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
 
                 filesSize = setFilesExist.Sum(f => f.Length);
 
-                transferReporter.SecondaryReport($"TSFT - In - Waiting for OUT mode to work and freeing disk space...");
+                reporter.OnProgress($"TSFT - In - Waiting for OUT mode to work and freeing disk space...");
                 if (mustWriteLogStatus)
                 {
                     _log.Info("Waiting for OUT mode to work and freeing disk space : {0} + {1} > {2}", filesSize, InWorkOptions.BufferSize, InWorkOptions.MaxSizeUsedOnShared);
@@ -314,7 +321,7 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                 listFiles = setFilesExist;
                 Thread.Sleep(250);
 
-                if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(5))
+                if (DateTime.Now.TimeOfDay > nowBeforeWait + TimeSpan.FromMinutes(InWorkOptions.NbMinWaitForFreeSpace))
                 {
                     throw new Exception("Waits too long time for disk space");
                 }

@@ -63,6 +63,7 @@ namespace TwoStageFileTransferCore.dto
             public long AwaitedParts { get; set; }
             public string RemoteHost { get; set; }
             public int RemotePort { get; set; }
+           
         }
 
         /*
