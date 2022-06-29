@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using TwoStageFileTransferCore.constant.sentences;
 
 namespace TwoStageFileTransferCore.dto.transfer
 {
@@ -17,6 +18,8 @@ namespace TwoStageFileTransferCore.dto.transfer
         public string TsftPassphrase => AppArgs.TsftPassphrase;
 
         public double NbMinWaitForFreeSpace { get; set; }
+
+        public ISentences Sentences { get; set; } = new SentencesEn();
 
         public CommonWorkOptions()
         {

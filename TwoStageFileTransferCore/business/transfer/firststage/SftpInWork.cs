@@ -28,9 +28,8 @@ namespace TwoStageFileTransferCore.business.transfer.firststage
                 using (Stream fo = new MemoryStream())
                 {
 
-
-                    string msg = "Creating part file " + fileOutPath.FileTemp.LocalPath;
-                    reporter.OnProgress($"TSFT - In - {msg}");
+                    string msg = string.Format(InWorkOptions.Sentences.InTransfertCreatePartFile, fileOutPath.FileTemp.LocalPath);
+                    reporter.OnProgress(string.Format(InWorkOptions.Sentences.InTransfertHeader, msg));
                     _log.Debug(msg);
 
                     Array.Clear(Buffer, 0, Buffer.Length);

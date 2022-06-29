@@ -208,18 +208,17 @@ namespace TwoStageFileTransferCore.utils
             _log.Info("Calculate SHA1");
             DateTime start = DateTime.Now;
 
-            string sha1 = FileUtils.GetSha1Hash(file);
+            string sha1 = GetSha1Hash(file);
             Console.WriteLine("Done.");
-
 
 
             if (compSha1 != null)
             {
-                LogUtils.I(_log, string.Format("SHA1 match: {0}", sha1.ToUpper().Equals(compSha1.ToUpper()) ? "OK" : "KO"));
+                LogUtils.I(_log, $"SHA1 match: {(sha1.ToUpper().Equals(compSha1.ToUpper()) ? "OK" : "KO")}");
             }
 
             TimeSpan duration = DateTime.Now - start;
-            _log.Info("Calculate Sha1 > Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
+            _log.Debug("Calculate Sha1 > Done ({0})", duration.ToString("hh\\:mm\\:ss\\.ffff"));
 
             return sha1;
         }

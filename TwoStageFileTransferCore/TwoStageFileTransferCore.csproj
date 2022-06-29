@@ -72,6 +72,8 @@
     <Compile Include="constant\CommonAppExceptReason.cs" />
     <Compile Include="constant\CredentialOrigins.cs" />
     <Compile Include="constant\DirectionTrts.cs" />
+    <Compile Include="constant\sentences\ISentences.cs" />
+    <Compile Include="constant\sentences\SentencesEn.cs" />
     <Compile Include="constant\TransferTypes.cs" />
     <Compile Include="dto\AppArgs.cs" />
     <Compile Include="dto\AppFile.cs" />
